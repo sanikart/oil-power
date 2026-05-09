@@ -1,0 +1,11 @@
+.DS_Store
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+data/raw/baci/*.zip
+data/raw/baci/*.csv
+data/raw/baci/*.csv.gz
+data/raw/comtrade_validation/
+data/raw/iea_optional/
+*.parquet

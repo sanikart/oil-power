@@ -1,0 +1,28 @@
+{
+  "owid": {
+    "oil_proved_reserves": {
+      "url": "https://ourworldindata.org/grapher/oil-proved-reserves.csv",
+      "raw_path": "data/raw/owid/oil-proved-reserves.csv",
+      "value_column": "Oil proved reserves",
+      "canonical_column": "oil_reserves"
+    },
+    "oil_production": {
+      "url": "https://ourworldindata.org/grapher/oil-production-by-country.csv",
+      "raw_path": "data/raw/owid/oil-production-by-country.csv",
+      "value_column": "Oil",
+      "canonical_column": "oil_production"
+    },
+    "oil_consumption": {
+      "url": "https://ourworldindata.org/grapher/oil-consumption-by-country.csv",
+      "raw_path": "data/raw/owid/oil-consumption-by-country.csv",
+      "value_column": "Oil",
+      "canonical_column": "oil_consumption"
+    }
+  },
+  "baci": {
+    "commodity_hs_code": "2709",
+    "commodity_name": "Petroleum oils and oils from bituminous minerals, crude",
+    "documentation_url": "https://www.cepii.fr/DATA_DOWNLOAD/baci/doc/baci_webpage.html",
+    "raw_dir": "data/raw/baci"
+  }
+}
