@@ -31,8 +31,22 @@ data/marts/oil_power_country_profiles.parquet
 ```bash
 python3 src/download/download_owid.py
 python3 src/transform/build_country_year.py
+python3 src/export/build_mvp_json.py
 python3 src/quality/check_country_year.py
+python3 src/quality/check_mvp_json.py
 ```
+
+## Interactive MVP
+
+The first visualization is a no-map p5.js story canvas:
+
+```bash
+python3 -m http.server 8000 --directory app
+```
+
+Open `http://localhost:8000`.
+
+The MVP JSON treats missing reserve/production values as visual zeroes so demand-only countries such as Japan and South Korea can appear as consumption powers. The canonical CSV keeps upstream nulls unchanged.
 
 ## Sources
 

@@ -36,3 +36,9 @@
 | `avg_unit_value_usd_per_tonne` | Trade value divided by tonnes |
 | `importer_supplier_share` | Supplier share within buyer imports |
 | `exporter_customer_share` | Buyer share within seller exports |
+
+## `oil_power_mvp.json`
+
+Compact JSON export for the p5.js MVP at `app/public/data/oil_power_mvp.json`.
+
+The export preserves the country-year fields needed by the visualization and adds metadata for the anchor year, complete visualization years, highlighted countries, and source note. Missing reserve/production/consumption values are converted to visual zeroes in this export only; the canonical CSV remains the source of truth.
