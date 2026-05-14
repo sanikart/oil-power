@@ -147,10 +147,11 @@ function draw() {
   drawBackground();
   drawCompassFrame();
   updateGraph();
+  updateHover();
   drawDirectionalLinks();
   drawCountryClusters();
   drawLegend();
-  updateHover();
+  drawTooltip();
   updateDetailPanel();
 }
 
@@ -266,19 +267,6 @@ function drawCompassFrame() {
   noFill();
   ellipse(cx, cy, Math.min(width, height) * 0.60, Math.min(width, height) * 0.60);
   ellipse(cx, cy, Math.min(width, height) * 0.92, Math.min(width, height) * 0.92);
-
-  noStroke();
-  fill(246, 232, 199, 145);
-  textFont("Avenir Next Condensed, Gill Sans, sans-serif");
-  textSize(width < 700 ? 10 : 12);
-  textStyle(BOLD);
-  textAlign(CENTER, CENTER);
-  text("NORTH", cx, 22);
-  text("SOUTH", cx, height - 22);
-  textAlign(LEFT, CENTER);
-  text("WEST", 20, cy);
-  textAlign(RIGHT, CENTER);
-  text("EAST", width - 20, cy);
 }
 
 function drawDirectionalLinks() {
@@ -327,11 +315,6 @@ function drawCluster(node) {
   textSize(width < 700 ? 11 : 13);
   textAlign(CENTER, CENTER);
   text(node.iso3, node.x, node.y);
-
-  fill(255, 247, 226, hot ? 226 : 150);
-  textStyle(NORMAL);
-  textSize(width < 700 ? 9 : 10);
-  text(node.region, node.x, node.y + haloR + 13);
 }
 
 function drawLegend() {
@@ -380,6 +363,67 @@ function updateHover() {
     }
   }
   hovered = best;
+}
+
+function drawTooltip() {
+  if (!hovered) return;
+
+  const row = hovered.row;
+  const padding = 14;
+  const boxW = width < 700 ? 250 : 292;
+  const boxH = 178;
+  const x = constrain(mouseX + 18, 12, width - boxW - 12);
+  const y = constrain(mouseY - 22, 12, height - boxH - 12);
+
+  noStroke();
+  fill(11, 8, 5, 224);
+  rect(x, y, boxW, boxH, 16);
+  stroke(255, 248, 235, 48);
+  strokeWeight(1);
+  noFill();
+  rect(x + 0.5, y + 0.5, boxW - 1, boxH - 1, 16);
+
+  noStroke();
+  fill(255, 248, 235, 245);
+  textFont("Avenir Next Condensed, Gill Sans, sans-serif");
+  textStyle(BOLD);
+  textAlign(LEFT, TOP);
+  textSize(18);
+  text(`${row.country_name} (${row.iso3})`, x + padding, y + padding);
+
+  textStyle(NORMAL);
+  textSize(11);
+  fill(255, 248, 235, 160);
+  text(`${SCENES[currentScene].label} / ${currentYear}`, x + padding, y + padding + 25);
+
+  const startY = y + padding + 54;
+  tooltipMetric("Has", row.global_reserve_share, METRICS.has.color, x + padding, startY, boxW - padding * 2);
+  tooltipMetric("Pumps", row.global_production_share, METRICS.pumps.color, x + padding, startY + 30, boxW - padding * 2);
+  tooltipMetric("Burns", row.global_consumption_share, METRICS.burns.color, x + padding, startY + 60, boxW - padding * 2);
+
+  fill(255, 248, 235, 180);
+  textSize(11);
+  textStyle(NORMAL);
+  textAlign(LEFT, TOP);
+  text(storyFor(row), x + padding, startY + 95, boxW - padding * 2, 42);
+}
+
+function tooltipMetric(label, value, rgb, x, y, w) {
+  const share = safeNumber(value);
+  const barW = Math.max(2, w * constrain(share / 0.22, 0, 1));
+  noStroke();
+  fill(255, 248, 235, 190);
+  textFont("Avenir Next Condensed, Gill Sans, sans-serif");
+  textStyle(BOLD);
+  textSize(11);
+  textAlign(LEFT, TOP);
+  text(label, x, y);
+  textAlign(RIGHT, TOP);
+  text(percent(value), x + w, y);
+  fill(255, 248, 235, 34);
+  rect(x, y + 16, w, 5, 999);
+  fill(rgb[0], rgb[1], rgb[2], 230);
+  rect(x, y + 16, barW, 5, 999);
 }
 
 function mousePressed() {
