@@ -1,28 +1,72 @@
 const SCENES = {
   has: {
     label: "Has It",
+    metric: "has",
     caption:
-      "Reserve bodies are sized by proved oil underground. The heaviest forms do not always move the most oil into the world.",
+      "Reserve circles show who has oil underground. The position is directional and abstract, not a map projection.",
   },
   pumps: {
     label: "Pumps It",
+    metric: "pumps",
     caption:
-      "Production turns reserves into motion. Particles rise from countries that actually pump oil at scale.",
+      "Production circles show who turns underground oil into supply. Big reserve bodies do not always become big pump bodies.",
   },
   burns: {
     label: "Burns It",
+    metric: "burns",
     caption:
-      "Consumption creates pull. Demand giants behave like wells, drawing attention even when they are not reserve giants.",
+      "Consumption circles show demand power. China, India, Japan, South Korea, and the United States pull oil through use.",
   },
   mismatch: {
     label: "Mismatch",
+    metric: "mismatch",
     caption:
-      "The contradiction field separates oil underground from oil power: high reserves can sit far from high production and demand.",
+      "Mismatch mode keeps all three circles visible and makes the contradiction inside each country cluster easier to compare.",
   },
 };
 
-const HIGHLIGHTS = new Set(["VEN", "SAU", "CAN", "USA", "CHN", "IND", "RUS", "IRN", "IRQ", "JPN", "KOR"]);
-const DETAIL_ISO = ["VEN", "SAU", "CAN", "USA", "CHN", "IND", "RUS", "IRN", "IRQ", "JPN", "KOR"];
+const COUNTRIES = ["CAN", "USA", "VEN", "RUS", "SAU", "IRN", "IRQ", "CHN", "IND", "JPN", "KOR"];
+const COUNTRY_LAYOUT = {
+  CAN: { x: 0.18, y: 0.24, label: "Canada", region: "Northwest" },
+  USA: { x: 0.22, y: 0.44, label: "United States", region: "West" },
+  VEN: { x: 0.27, y: 0.68, label: "Venezuela", region: "Southwest" },
+  RUS: { x: 0.58, y: 0.17, label: "Russia", region: "North" },
+  SAU: { x: 0.50, y: 0.48, label: "Saudi Arabia", region: "Middle" },
+  IRN: { x: 0.58, y: 0.42, label: "Iran", region: "Middle East" },
+  IRQ: { x: 0.54, y: 0.55, label: "Iraq", region: "Middle East" },
+  CHN: { x: 0.76, y: 0.42, label: "China", region: "East" },
+  IND: { x: 0.70, y: 0.66, label: "India", region: "Southeast" },
+  JPN: { x: 0.88, y: 0.35, label: "Japan", region: "Far East" },
+  KOR: { x: 0.84, y: 0.27, label: "South Korea", region: "Northeast" },
+};
+
+const METRICS = {
+  has: {
+    label: "Has",
+    field: "oil_reserves",
+    share: "global_reserve_share",
+    rank: "reserve_rank",
+    color: [205, 78, 51],
+    offset: [-0.92, -0.46],
+  },
+  pumps: {
+    label: "Pumps",
+    field: "oil_production",
+    share: "global_production_share",
+    rank: "production_rank",
+    color: [223, 158, 47],
+    offset: [0.92, -0.42],
+  },
+  burns: {
+    label: "Burns",
+    field: "oil_consumption",
+    share: "global_consumption_share",
+    rank: "consumption_rank",
+    color: [54, 145, 134],
+    offset: [0.02, 1.0],
+  },
+};
+
 const NUMERIC_FIELDS = [
   "year",
   "oil_reserves",
@@ -42,15 +86,16 @@ const NUMERIC_FIELDS = [
 let oilData;
 let rowsByYear = new Map();
 let currentYear = 2020;
-let currentScene = "has";
-let entities = [];
-let particles = [];
+let currentScene = "mismatch";
+let countryNodes = [];
+let metricNodes = [];
 let hovered = null;
 let selected = null;
 let yearSlider;
 let yearLabel;
 let detailPanel;
 let captionEl;
+let lastPanelKey = "";
 
 function preload() {
   oilData = loadJSON("./public/data/oil_power_mvp.json");
@@ -61,11 +106,18 @@ function setup() {
   const canvas = createCanvas(holder.clientWidth, holder.clientHeight);
   canvas.parent("sketch-holder");
   pixelDensity(Math.min(2, window.devicePixelRatio || 1));
+  frameRate(30);
 
   yearSlider = document.getElementById("year-slider");
   yearLabel = document.getElementById("year-label");
   detailPanel = document.getElementById("detail-panel");
   captionEl = document.getElementById("scene-caption");
+
+  for (const row of oilData.rows) {
+    normalizeRow(row);
+    if (!rowsByYear.has(row.year)) rowsByYear.set(row.year, []);
+    rowsByYear.get(row.year).push(row);
+  }
 
   const years = oilData.metadata.completeYears;
   yearSlider.min = Math.min(...years);
@@ -74,37 +126,35 @@ function setup() {
   currentYear = Number(yearSlider.value);
   yearLabel.textContent = currentYear;
 
-  for (const row of oilData.rows) {
-    normalizeRow(row);
-    if (!rowsByYear.has(row.year)) rowsByYear.set(row.year, []);
-    rowsByYear.get(row.year).push(row);
-  }
-
   document.querySelectorAll(".scene-tab").forEach((button) => {
     button.addEventListener("click", () => setScene(button.dataset.scene));
   });
   yearSlider.addEventListener("input", () => {
     currentYear = Number(yearSlider.value);
     yearLabel.textContent = currentYear;
-    rebuildEntities();
+    selected = null;
+    lastPanelKey = "";
+    rebuildGraph();
   });
 
-  rebuildEntities();
+  setScene("mismatch");
 }
 
 function windowResized() {
   const holder = document.getElementById("sketch-holder");
   resizeCanvas(holder.clientWidth, holder.clientHeight);
-  rebuildEntities();
+  rebuildGraph();
 }
 
 function draw() {
   drawBackground();
-  hovered = null;
-  updateEntities();
-  drawScene();
-  updateParticles();
-  drawLabels();
+  drawCompassFrame();
+  updateGraph();
+  drawLinks();
+  drawCountryNodes();
+  drawMetricNodes();
+  drawCenterLegend();
+  updateHover();
   updateDetailPanel();
 }
 
@@ -117,63 +167,293 @@ function setScene(scene) {
   });
   captionEl.textContent = SCENES[scene].caption;
   selected = null;
-  particles = [];
-  rebuildEntities();
+  lastPanelKey = "";
+  rebuildGraph();
 }
 
-function rebuildEntities() {
+function rebuildGraph() {
   const rows = rowsByYear.get(Number(currentYear)) || [];
-  const chosen = selectRows(rows);
-  const max = {
-    reserves: maxValue(rows, "oil_reserves"),
-    production: maxValue(rows, "oil_production"),
-    consumption: maxValue(rows, "oil_consumption"),
-    power: maxValue(rows, "oil_power_index"),
-  };
+  const rowByIso = new Map(rows.map((row) => [row.iso3, row]));
+  countryNodes = [];
+  metricNodes = [];
 
-  entities = chosen.map((row, index) => {
-    const existing = entities.find((entity) => entity.iso3 === row.iso3);
-    const target = targetFor(row, index, chosen.length, max);
-    return {
-      ...row,
-      isHighlight: HIGHLIGHTS.has(row.iso3),
-      x: existing ? existing.x : width / 2,
-      y: existing ? existing.y : height / 2,
-      vx: 0,
-      vy: 0,
-      tx: target.x,
-      ty: target.y,
-      r: target.r,
-      tone: target.tone,
-      reserveN: normalizeMetric(row.oil_reserves, max.reserves),
-      productionN: normalizeMetric(row.oil_production, max.production),
-      consumptionN: normalizeMetric(row.oil_consumption, max.consumption),
-    };
-  });
+  for (const iso3 of COUNTRIES) {
+    const row = rowByIso.get(iso3);
+    if (!row) continue;
+    const layout = COUNTRY_LAYOUT[iso3];
+    const anchor = makeCountryNode(row, layout);
+    countryNodes.push(anchor);
+
+    for (const metricKey of Object.keys(METRICS)) {
+      metricNodes.push(makeMetricNode(anchor, metricKey));
+    }
+  }
 }
 
-function selectRows(rows) {
-  const selectedRows = new Map();
-  for (const row of rows) {
-    if (DETAIL_ISO.includes(row.iso3)) selectedRows.set(row.iso3, row);
-  }
+function makeCountryNode(row, layout) {
+  const marginX = Math.max(82, width * 0.09);
+  const marginY = Math.max(76, height * 0.12);
+  const tx = map(layout.x, 0, 1, marginX, width - marginX);
+  const ty = map(layout.y, 0, 1, marginY, height - marginY);
+  return {
+    type: "country",
+    iso3: row.iso3,
+    country_name: row.country_name,
+    region: layout.region,
+    row,
+    tx,
+    ty,
+    x: tx,
+    y: ty,
+    r: 7,
+  };
+}
 
-  const metric = currentScene === "has" ? "oil_reserves" : currentScene === "pumps" ? "oil_production" : "oil_consumption";
-  rows
-    .filter((row) => row[metric] !== null)
-    .sort((a, b) => b[metric] - a[metric])
-    .slice(0, 34)
-    .forEach((row) => selectedRows.set(row.iso3, row));
+function makeMetricNode(anchor, metricKey) {
+  const metric = METRICS[metricKey];
+  const share = safeNumber(anchor.row[metric.share]);
+  const value = anchor.row[metric.field];
+  const base = Math.min(width, height);
+  const clusterRadius = constrain(base * 0.055, 34, 54);
+  const rawRadius = map(Math.sqrt(Math.max(0, share)), 0, Math.sqrt(0.22), 4, 42);
+  const r = value > 0 ? constrain(rawRadius, 5, 42) : 4;
+  return {
+    type: "metric",
+    metricKey,
+    iso3: anchor.iso3,
+    country_name: anchor.country_name,
+    region: anchor.region,
+    row: anchor.row,
+    parent: anchor,
+    share,
+    value,
+    rank: anchor.row[metric.rank],
+    r,
+    tx: constrain(anchor.tx + metric.offset[0] * clusterRadius, 36, width - 36),
+    ty: constrain(anchor.ty + metric.offset[1] * clusterRadius, 36, height - 36),
+    x: constrain(anchor.tx + metric.offset[0] * clusterRadius, 36, width - 36),
+    y: constrain(anchor.ty + metric.offset[1] * clusterRadius, 36, height - 36),
+  };
+}
+
+function updateGraph() {
+  for (const node of [...countryNodes, ...metricNodes]) {
+    const drift = node.type === "metric" ? sin(frameCount * 0.025 + node.x * 0.01 + node.y * 0.01) * 1.2 : 0;
+    node.x += (node.tx - node.x) * 0.09;
+    node.y += (node.ty + drift - node.y) * 0.09;
+  }
+}
+
+function drawBackground() {
+  background(23, 16, 9);
+  noFill();
+  stroke(255, 235, 194, 12);
+  strokeWeight(1);
+  const step = 36;
+  for (let x = -step; x < width + step; x += step) line(x, 0, x + width * 0.12, height);
+  for (let y = 0; y < height; y += step) line(0, y, width, y - height * 0.08);
+
+  const glow = drawingContext.createRadialGradient(width * 0.58, height * 0.45, 20, width * 0.58, height * 0.45, width * 0.75);
+  glow.addColorStop(0, "rgba(209, 151, 55, 0.22)");
+  glow.addColorStop(0.45, "rgba(55, 128, 117, 0.10)");
+  glow.addColorStop(1, "rgba(23, 16, 9, 0)");
+  drawingContext.fillStyle = glow;
+  drawingContext.fillRect(0, 0, width, height);
+}
+
+function drawCompassFrame() {
+  const cx = width / 2;
+  const cy = height / 2;
+  stroke(246, 232, 199, 42);
+  strokeWeight(1);
+  line(cx, 30, cx, height - 30);
+  line(30, cy, width - 30, cy);
+  noFill();
+  ellipse(cx, cy, Math.min(width, height) * 0.62, Math.min(width, height) * 0.62);
+  ellipse(cx, cy, Math.min(width, height) * 0.92, Math.min(width, height) * 0.92);
+
+  noStroke();
+  fill(246, 232, 199, 150);
+  textFont("Avenir Next Condensed, Gill Sans, sans-serif");
+  textSize(11);
+  textStyle(BOLD);
+  textAlign(CENTER, CENTER);
+  text("NORTH", cx, 20);
+  text("SOUTH", cx, height - 18);
+  textAlign(LEFT, CENTER);
+  text("WEST", 18, cy);
+  textAlign(RIGHT, CENTER);
+  text("EAST", width - 18, cy);
+}
+
+function drawLinks() {
+  for (const node of metricNodes) {
+    const active = isMetricActive(node.metricKey);
+    const metric = METRICS[node.metricKey];
+    const alpha = active ? 132 : 42;
+    stroke(metric.color[0], metric.color[1], metric.color[2], alpha);
+    strokeWeight(active ? 1.4 : 0.8);
+    line(node.parent.x, node.parent.y, node.x, node.y);
+  }
 
   if (currentScene === "mismatch") {
-    rows
-      .filter((row) => row.oil_reserves !== null && row.oil_production !== null && row.oil_consumption !== null)
-      .sort((a, b) => mismatchScore(b) - mismatchScore(a))
-      .slice(0, 26)
-      .forEach((row) => selectedRows.set(row.iso3, row));
+    for (const country of countryNodes) {
+      const score = mismatchScore(country.row);
+      stroke(246, 232, 199, map(score, 0, 1, 18, 105));
+      strokeWeight(map(score, 0, 1, 0.5, 2.2));
+      line(width / 2, height / 2, country.x, country.y);
+    }
+  }
+}
+
+function drawCountryNodes() {
+  for (const node of countryNodes) {
+    const score = mismatchScore(node.row);
+    noStroke();
+    fill(246, 232, 199, currentScene === "mismatch" ? 150 + score * 90 : 150);
+    circle(node.x, node.y, 12 + score * 8);
+
+    fill(246, 232, 199, 218);
+    textFont("Avenir Next Condensed, Gill Sans, sans-serif");
+    textSize(width < 700 ? 10 : 12);
+    textStyle(BOLD);
+    textAlign(CENTER, CENTER);
+    text(node.iso3, node.x, node.y - 18);
+  }
+}
+
+function drawMetricNodes() {
+  for (const node of metricNodes) {
+    const metric = METRICS[node.metricKey];
+    const active = isMetricActive(node.metricKey);
+    const isHot = hovered === node || selected === node || hovered === node.parent || selected === node.parent;
+    const alpha = active ? 235 : 78;
+    const pulse = isHot ? 1.18 : 1;
+
+    if (currentScene === "mismatch") drawMismatchHalo(node);
+
+    stroke(metric.color[0], metric.color[1], metric.color[2], active ? 238 : 92);
+    strokeWeight(active ? 2.1 : 1.1);
+    if (node.value > 0) fill(metric.color[0], metric.color[1], metric.color[2], alpha);
+    else fill(23, 16, 9, 90);
+    circle(node.x, node.y, node.r * 2 * pulse);
+
+    if (active || isHot || node.r > 16) {
+      fill(255, 247, 226, active ? 232 : 140);
+      noStroke();
+      textFont("Avenir Next Condensed, Gill Sans, sans-serif");
+      textSize(constrain(node.r * 0.55, 8, 13));
+      textStyle(BOLD);
+      textAlign(CENTER, CENTER);
+      text(metric.label, node.x, node.y);
+    }
+  }
+}
+
+function drawMismatchHalo(node) {
+  const score = mismatchScore(node.row);
+  const metric = METRICS[node.metricKey];
+  noFill();
+  stroke(metric.color[0], metric.color[1], metric.color[2], 34 + score * 84);
+  strokeWeight(1);
+  circle(node.x, node.y, node.r * 2 + 10 + score * 16);
+}
+
+function drawCenterLegend() {
+  const cx = width / 2;
+  const cy = height / 2;
+  noStroke();
+  fill(23, 16, 9, 190);
+  rectMode(CENTER);
+  rect(cx, cy, 154, 58, 999);
+  rectMode(CORNER);
+
+  fill(246, 232, 199, 224);
+  textFont("Avenir Next Condensed, Gill Sans, sans-serif");
+  textStyle(BOLD);
+  textAlign(CENTER, CENTER);
+  textSize(12);
+  text("OIL POWER", cx, cy - 10);
+  textStyle(NORMAL);
+  textSize(10);
+  text("has / pumps / burns", cx, cy + 10);
+}
+
+function updateHover() {
+  hovered = null;
+  const allNodes = [...metricNodes, ...countryNodes];
+  let best = null;
+  let bestDistance = Infinity;
+  for (const node of allNodes) {
+    const hitRadius = node.type === "metric" ? Math.max(node.r, 9) + 6 : 18;
+    const d = dist(mouseX, mouseY, node.x, node.y);
+    if (d < hitRadius && d < bestDistance) {
+      best = node;
+      bestDistance = d;
+    }
+  }
+  hovered = best;
+}
+
+function mousePressed() {
+  if (hovered) {
+    selected = hovered;
+    lastPanelKey = "";
+  }
+}
+
+function updateDetailPanel() {
+  const node = hovered || selected;
+  const key = node ? `${currentYear}:${currentScene}:${node.iso3}:${node.type}:${node.metricKey || "country"}` : `${currentYear}:${currentScene}:empty`;
+  if (key === lastPanelKey) return;
+  lastPanelKey = key;
+
+  if (!node) {
+    detailPanel.innerHTML = `
+      <p class="panel-eyebrow">${SCENES[currentScene].label} / ${currentYear}</p>
+      <h2>Hover a circle</h2>
+      <p class="panel-copy">Each country has three linked circles: has, pumps, and burns. Placement is a directional graph, not a map.</p>
+    `;
+    return;
   }
 
-  return Array.from(selectedRows.values());
+  const row = node.row;
+  const title = node.type === "metric" ? `${row.country_name}: ${METRICS[node.metricKey].label}` : row.country_name;
+  detailPanel.innerHTML = `
+    <p class="panel-eyebrow">${node.region} / ${currentYear}</p>
+    <h2>${title}</h2>
+    <p class="panel-copy">${storyFor(row)}</p>
+    <div class="metric-grid">
+      ${metric("Has share", percent(row.global_reserve_share))}
+      ${metric("Pumps share", percent(row.global_production_share))}
+      ${metric("Burns share", percent(row.global_consumption_share))}
+      ${metric("Reserve rank", row.reserve_rank)}
+      ${metric("Production rank", row.production_rank)}
+      ${metric("Consumption rank", row.consumption_rank)}
+      ${metric("Power index", fixed(row.oil_power_index))}
+    </div>
+  `;
+}
+
+function isMetricActive(metricKey) {
+  return currentScene === "mismatch" || SCENES[currentScene].metric === metricKey;
+}
+
+function mismatchScore(row) {
+  const reserve = safeNumber(row.global_reserve_share);
+  const production = safeNumber(row.global_production_share);
+  const consumption = safeNumber(row.global_consumption_share);
+  return constrain(Math.max(Math.abs(reserve - production), Math.abs(reserve - consumption), Math.abs(production - consumption)) * 5.5, 0, 1);
+}
+
+function storyFor(row) {
+  if (row.iso3 === "VEN") return "Huge reserve circle, much smaller pump and burn circles: oil underground is not the same as oil power.";
+  if (row.iso3 === "USA") return "All three circles matter: the United States is a production and demand power, but not the largest reserve body.";
+  if (row.iso3 === "CHN" || row.iso3 === "IND") return "Demand power shows up through the burn circle more than the has circle.";
+  if (row.iso3 === "SAU" || row.iso3 === "RUS") return "Production-side power: reserve mass is connected to a large pump circle.";
+  if (row.iso3 === "JPN" || row.iso3 === "KOR") return "Demand-heavy, reserve-light: useful later when the trade chapter explains who supplies them.";
+  if (row.iso3 === "CAN" || row.iso3 === "IRN" || row.iso3 === "IRQ") return "A reserve-heavy country where the relative pump circle tells whether underground oil becomes supply.";
+  return "Compare the three circles to see how reserves, production, and consumption split apart.";
 }
 
 function normalizeRow(row) {
@@ -182,270 +462,20 @@ function normalizeRow(row) {
   }
 }
 
-function targetFor(row, index, count, max) {
-  const padX = width * 0.08;
-  const padY = height * 0.12;
-  const reserveN = normalizeMetric(row.oil_reserves, max.reserves);
-  const productionN = normalizeMetric(row.oil_production, max.production);
-  const consumptionN = normalizeMetric(row.oil_consumption, max.consumption);
-  const angle = (index / Math.max(1, count)) * TWO_PI;
-  const ring = 0.32 + (index % 5) * 0.07;
-
-  if (currentScene === "has") {
-    return {
-      x: map(productionN, 0, 1, padX, width - padX) + cos(angle) * 18,
-      y: map(reserveN, 0, 1, height - padY, padY) + sin(angle) * 18,
-      r: map(Math.sqrt(reserveN), 0, 1, 9, 58),
-      tone: reserveN,
-    };
-  }
-
-  if (currentScene === "pumps") {
-    return {
-      x: width * (0.18 + 0.64 * ((index % 13) / 12)),
-      y: map(productionN, 0, 1, height - padY, padY),
-      r: map(Math.sqrt(productionN), 0, 1, 7, 44),
-      tone: productionN,
-    };
-  }
-
-  if (currentScene === "burns") {
-    return {
-      x: width / 2 + cos(angle) * width * ring,
-      y: height / 2 + sin(angle) * height * ring * 0.76,
-      r: map(Math.sqrt(consumptionN), 0, 1, 8, 52),
-      tone: consumptionN,
-    };
-  }
-
-  return {
-    x: map(logNorm(row.oil_reserves), 0, 1, padX, width - padX),
-    y: map(logNorm(row.oil_production + row.oil_consumption), 0, 1, height - padY, padY),
-    r: map(Math.sqrt(Math.max(reserveN, productionN, consumptionN)), 0, 1, 7, 42),
-    tone: mismatchScore(row),
-  };
-}
-
-function updateEntities() {
-  for (const entity of entities) {
-    entity.vx += (entity.tx - entity.x) * 0.035;
-    entity.vy += (entity.ty - entity.y) * 0.035;
-    entity.vx *= 0.78;
-    entity.vy *= 0.78;
-    entity.x += entity.vx;
-    entity.y += entity.vy;
-
-    if (dist(mouseX, mouseY, entity.x, entity.y) < entity.r + 8) hovered = entity;
-  }
-}
-
-function drawScene() {
-  if (!entities.length) {
-    noStroke();
-    fill(246, 239, 225, 180);
-    textAlign(CENTER, CENTER);
-    textSize(18);
-    text("No country data for this year", width / 2, height / 2);
-    return;
-  }
-
-  if (currentScene === "has") drawReserveField();
-  if (currentScene === "pumps") drawProductionField();
-  if (currentScene === "burns") drawConsumptionField();
-  if (currentScene === "mismatch") drawMismatchField();
-
-  for (const entity of entities) drawEntity(entity);
-}
-
-function drawReserveField() {
-  stroke(231, 196, 126, 38);
-  strokeWeight(1);
-  for (let i = 0; i < 11; i++) {
-    const y = map(i, 0, 10, height * 0.14, height * 0.9);
-    line(width * 0.06, y, width * 0.94, y + sin(frameCount * 0.01 + i) * 12);
-  }
-  drawAxisText("less pumped", "more pumped", "deeper reserves");
-}
-
-function drawProductionField() {
-  stroke(217, 154, 40, 45);
-  strokeWeight(1.4);
-  for (const entity of entities) {
-    const strands = entity.isHighlight ? 5 : 2;
-    for (let i = 0; i < strands; i++) {
-      const sway = sin(frameCount * 0.035 + i + entity.x * 0.01) * 14;
-      line(entity.x, entity.y, entity.x + sway, height * 0.1);
-    }
-    if (random() < entity.productionN * 0.24) {
-      particles.push({
-        x: entity.x + random(-entity.r, entity.r),
-        y: entity.y,
-        vx: random(-0.35, 0.35),
-        vy: random(-2.9, -0.8),
-        life: 90,
-        color: [217, 154, 40],
-      });
-    }
-  }
-  drawAxisText("", "", "more production");
-}
-
-function drawConsumptionField() {
-  noFill();
-  strokeWeight(1);
-  for (const entity of entities) {
-    if (entity.consumptionN < 0.08) continue;
-    stroke(47, 143, 131, 36 + entity.consumptionN * 80);
-    const pulse = sin(frameCount * 0.04 + entity.x) * 8;
-    circle(entity.x, entity.y, entity.r * 2.5 + pulse);
-    circle(entity.x, entity.y, entity.r * 3.8 + pulse);
-  }
-}
-
-function drawMismatchField() {
-  stroke(246, 239, 225, 36);
-  strokeWeight(1);
-  line(width * 0.1, height * 0.82, width * 0.9, height * 0.18);
-  drawAxisText("less underground", "more underground", "more pumped + burned");
-}
-
-function drawEntity(entity) {
-  const hot = entity === hovered || entity === selected;
-  const alpha = entity.isHighlight ? 220 : 128;
-  const red = currentScene === "mismatch" ? lerp(85, 182, entity.tone || 0) : lerp(45, 217, entity.tone || 0);
-  const green = currentScene === "burns" ? lerp(70, 143, entity.tone || 0) : lerp(47, 154, entity.tone || 0);
-  const blue = currentScene === "burns" ? lerp(62, 131, entity.tone || 0) : 40;
-
-  noStroke();
-  fill(red, green, blue, alpha * 0.34);
-  circle(entity.x, entity.y, entity.r * (hot ? 2.55 : 2.15));
-  fill(red, green, blue, alpha);
-  circle(entity.x, entity.y, entity.r * (hot ? 1.2 : 1));
-
-  if (entity.isHighlight) {
-    stroke(246, 239, 225, hot ? 230 : 150);
-    strokeWeight(hot ? 2.4 : 1.4);
-    noFill();
-    circle(entity.x, entity.y, entity.r * 1.42);
-  }
-}
-
-function drawLabels() {
-  textFont("Avenir Next Condensed, Gill Sans, sans-serif");
-  textSize(width < 600 ? 11 : 13);
-  textStyle(BOLD);
-  noStroke();
-  for (const entity of entities) {
-    if (!entity.isHighlight && entity !== hovered && entity !== selected) continue;
-    fill(246, 239, 225, entity.isHighlight ? 230 : 170);
-    textAlign(CENTER, CENTER);
-    text(entity.iso3, entity.x, entity.y - entity.r - 14);
-  }
-}
-
-function updateParticles() {
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const particle = particles[i];
-    particle.x += particle.vx;
-    particle.y += particle.vy;
-    particle.life -= 1;
-    noStroke();
-    fill(particle.color[0], particle.color[1], particle.color[2], particle.life * 2.4);
-    circle(particle.x, particle.y, 3);
-    if (particle.life <= 0 || particle.y < 0) particles.splice(i, 1);
-  }
-  if (particles.length > 600) particles.splice(0, particles.length - 600);
-}
-
-function drawBackground() {
-  background(28, 20, 12);
-  for (let y = 0; y < height; y += 3) {
-    const t = y / height;
-    stroke(lerp(37, 15, t), lerp(27, 18, t), lerp(15, 13, t), 190);
-    line(0, y, width, y);
-  }
-  stroke(246, 239, 225, 10);
-  for (let x = 0; x < width; x += 34) line(x, 0, x + sin(frameCount * 0.003 + x) * 20, height);
-}
-
-function drawAxisText(left, right, top) {
-  textFont("Avenir Next Condensed, Gill Sans, sans-serif");
-  textSize(12);
-  textStyle(BOLD);
-  fill(246, 239, 225, 125);
-  noStroke();
-  textAlign(LEFT, CENTER);
-  if (left) text(left, width * 0.07, height * 0.94);
-  textAlign(RIGHT, CENTER);
-  if (right) text(right, width * 0.93, height * 0.94);
-  textAlign(LEFT, CENTER);
-  if (top) text(top, width * 0.07, height * 0.08);
-}
-
-function mousePressed() {
-  if (hovered) selected = hovered;
-}
-
-function updateDetailPanel() {
-  const entity = hovered || selected;
-  if (!entity) {
-    detailPanel.innerHTML = `
-      <p class="panel-eyebrow">${SCENES[currentScene].label} / ${currentYear}</p>
-      <h2>Hover a country</h2>
-      <p class="panel-copy">The canvas uses abstract forces only. No geography, no map projection, no borders.</p>
-    `;
-    return;
-  }
-  detailPanel.innerHTML = `
-    <p class="panel-eyebrow">${SCENES[currentScene].label} / ${currentYear}</p>
-    <h2>${entity.country_name}</h2>
-    <p class="panel-copy">${countryLine(entity)}</p>
-    <div class="metric-grid">
-      ${metric("Reserve rank", entity.reserve_rank)}
-      ${metric("Production rank", entity.production_rank)}
-      ${metric("Consumption rank", entity.consumption_rank)}
-      ${metric("Reserves", compact(entity.oil_reserves))}
-      ${metric("Production", compact(entity.oil_production))}
-      ${metric("Consumption", compact(entity.oil_consumption))}
-    </div>
-  `;
-}
-
-function countryLine(entity) {
-  if (entity.iso3 === "VEN") return "A giant underground body with much weaker pumping force in the anchor year.";
-  if (entity.iso3 === "USA") return "Less reserve-dominant than Venezuela or Saudi Arabia, but huge in both pumping and burning.";
-  if (entity.iso3 === "CHN" || entity.iso3 === "IND") return "A demand power: the pull is stronger than the underground body.";
-  if (entity.iso3 === "SAU" || entity.iso3 === "RUS") return "A production-side power where underground mass turns into market motion.";
-  if (entity.iso3 === "JPN" || entity.iso3 === "KOR") return "A consumption-heavy country, useful for the later trade-dependence chapter.";
-  return "Its position changes by reserves, production, consumption, and the mismatch between them.";
-}
-
 function metric(label, value) {
   return `<div class="metric"><span>${label}</span><strong>${value ?? "n/a"}</strong></div>`;
 }
 
-function compact(value) {
+function percent(value) {
   if (value === null || Number.isNaN(value)) return "n/a";
-  return Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 2 }).format(value);
+  return `${(Number(value) * 100).toFixed(2)}%`;
 }
 
-function maxValue(rows, field) {
-  return Math.max(0, ...rows.map((row) => row[field] || 0));
+function fixed(value) {
+  if (value === null || Number.isNaN(value)) return "n/a";
+  return Number(value).toFixed(2);
 }
 
-function normalizeMetric(value, max) {
-  if (value === null || !max) return 0;
-  return Math.max(0, Math.min(1, value / max));
-}
-
-function logNorm(value) {
-  if (!value || value <= 0) return 0;
-  return Math.log10(value + 1) / 11;
-}
-
-function mismatchScore(row) {
-  const reserveRank = row.reserve_rank || 100;
-  const productionRank = row.production_rank || 100;
-  const consumptionRank = row.consumption_rank || 100;
-  return Math.abs(reserveRank - Math.min(productionRank, consumptionRank)) / 100;
+function safeNumber(value) {
+  return value === null || Number.isNaN(value) ? 0 : Number(value);
 }
