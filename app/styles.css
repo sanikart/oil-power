@@ -12,6 +12,7 @@
 
 html {
   width: 100%;
+  height: 100%;
   overflow-x: hidden;
 }
 
@@ -23,7 +24,8 @@ html {
 body {
   margin: 0;
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 100%;
   color: var(--ink);
   font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   overflow-x: hidden;
@@ -39,14 +41,15 @@ input {
 
 .shell {
   width: 100%;
+  height: 100vh;
   min-height: 100vh;
   margin: 0 auto;
-  padding: clamp(16px, 2.2vw, 34px);
-  overflow-x: hidden;
+  padding: 0;
+  overflow: hidden;
 }
 
 .intro {
-  display: grid;
+  display: none;
   grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
   gap: clamp(18px, 4vw, 64px);
   align-items: end;
@@ -84,54 +87,61 @@ h1 {
 }
 
 .controls {
-  display: flex;
+  position: fixed;
+  right: clamp(14px, 2vw, 28px);
+  bottom: clamp(14px, 2vw, 28px);
+  z-index: 20;
+  display: grid;
   gap: 16px;
-  align-items: center;
-  justify-content: space-between;
+  align-items: stretch;
+  justify-content: stretch;
   min-width: 0;
-  padding: 12px;
-  border: 1px solid var(--line);
-  background: rgba(255, 248, 235, 0.54);
-  backdrop-filter: blur(14px);
+  width: min(420px, calc(100vw - 28px));
+  padding: 14px;
+  border: 1px solid rgba(255, 248, 235, 0.24);
+  border-radius: 18px;
+  background: rgba(23, 16, 9, 0.72);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(18px);
 }
 
 .scene-tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
-  flex-wrap: wrap;
   min-width: 0;
 }
 
 .scene-tab {
-  min-height: 42px;
+  min-height: 40px;
   min-width: 0;
-  padding: 0 16px;
-  border: 1px solid rgba(36, 24, 12, 0.22);
-  border-radius: 4px;
-  color: var(--ink);
-  background: rgba(255, 255, 255, 0.2);
+  padding: 0 10px;
+  border: 1px solid rgba(255, 248, 235, 0.22);
+  border-radius: 999px;
+  color: rgba(255, 248, 235, 0.78);
+  background: rgba(255, 248, 235, 0.08);
   cursor: pointer;
 }
 
 .scene-tab.active {
-  color: #f9f2e4;
-  border-color: var(--crude);
-  background: var(--crude);
+  color: var(--crude);
+  border-color: rgba(255, 248, 235, 0.72);
+  background: rgba(255, 248, 235, 0.9);
 }
 
 .year-control {
   display: grid;
   gap: 6px;
   min-width: 0;
-  width: min(360px, 100%);
-  color: var(--muted);
+  width: 100%;
+  color: rgba(255, 248, 235, 0.72);
   font-family: "Avenir Next Condensed", "Gill Sans", sans-serif;
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .year-control strong {
-  color: var(--ink);
+  color: #fff8eb;
   font-size: 1.15rem;
 }
 
@@ -139,23 +149,26 @@ input[type="range"] {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  accent-color: var(--crude);
+  accent-color: var(--amber);
 }
 
 .stage {
   position: relative;
   display: block;
   min-width: 0;
-  min-height: clamp(660px, 72vh, 900px);
-  margin-top: 18px;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  margin: 0;
 }
 
 #sketch-holder {
   width: 100%;
+  height: 100%;
   min-width: 0;
-  min-height: clamp(660px, 72vh, 900px);
+  min-height: 100%;
   overflow: hidden;
-  border: 1px solid rgba(36, 24, 12, 0.2);
+  border: 0;
   background: #1c140c;
 }
 
@@ -165,16 +178,7 @@ input[type="range"] {
 }
 
 .detail-panel {
-  position: absolute;
-  top: 18px;
-  right: 18px;
-  width: min(330px, calc(100% - 36px));
-  min-height: 220px;
-  padding: 20px;
-  border: 1px solid rgba(36, 24, 12, 0.22);
-  background: rgba(255, 248, 235, 0.82);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 20px 60px rgba(23, 16, 9, 0.22);
+  display: none;
 }
 
 .detail-panel h2 {
@@ -211,50 +215,26 @@ input[type="range"] {
 }
 
 .caption {
-  max-width: 1120px;
-  margin-top: 18px;
-  color: #4a3d30;
-  font-size: 1.08rem;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
+  display: none;
 }
 
 @media (max-width: 900px) {
-  .intro {
-    grid-template-columns: 1fr;
-  }
-
   .controls {
-    align-items: stretch;
-    flex-direction: column;
+    width: min(390px, calc(100vw - 24px));
   }
 
   #sketch-holder {
-    min-height: 620px;
+    min-height: 100%;
   }
 
   .stage {
-    min-height: 620px;
+    min-height: 100vh;
   }
 }
 
 @media (max-width: 700px) {
   .shell {
-    width: 100%;
-    padding: 18px;
-  }
-
-  .intro {
-    display: block;
-  }
-
-  h1 {
-    max-width: 100%;
-    font-size: clamp(1.85rem, 8vw, 2.5rem);
-  }
-
-  .lede {
-    max-width: 100%;
+    padding: 0;
   }
 
   .scene-tabs {
@@ -270,18 +250,11 @@ input[type="range"] {
   }
 
   #sketch-holder {
-    min-height: 580px;
+    min-height: 100%;
   }
 
   .stage {
-    min-height: auto;
-  }
-
-  .detail-panel {
-    position: static;
-    width: 100%;
-    min-height: 0;
-    margin-top: 12px;
+    min-height: 100vh;
   }
 }
 
