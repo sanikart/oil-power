@@ -154,7 +154,9 @@ const NUMERIC_FIELDS = [
 ];
 
 let oilData;
+let tradeData;
 let rowsByYear = new Map();
+let tradeEdgesByYear = new Map();
 let currentYear = 2020;
 let currentScene = "mismatch";
 let countryNodes = [];
@@ -168,6 +170,7 @@ let lastPanelKey = "";
 
 function preload() {
   oilData = loadJSON("./public/data/oil_power_mvp.json");
+  tradeData = loadJSON("./public/data/crude_trade_edges.json");
 }
 
 function setup() {
@@ -186,6 +189,11 @@ function setup() {
     normalizeRow(row);
     if (!rowsByYear.has(row.year)) rowsByYear.set(row.year, []);
     rowsByYear.get(row.year).push(row);
+  }
+  for (const edge of tradeData.edges) {
+    normalizeTradeEdge(edge);
+    if (!tradeEdgesByYear.has(edge.year)) tradeEdgesByYear.set(edge.year, []);
+    tradeEdgesByYear.get(edge.year).push(edge);
   }
 
   const years = oilData.metadata.completeYears;
@@ -220,6 +228,7 @@ function draw() {
   drawCompassFrame();
   updateGraph();
   updateHover();
+  drawTradeEdges();
   drawCountryClusters();
   drawTitle();
   drawLegend();
@@ -335,6 +344,54 @@ function drawCompassFrame() {
   ellipse(cx, cy, Math.min(width, height) * 0.92, Math.min(width, height) * 0.92);
 }
 
+function drawTradeEdges() {
+  if (currentScene !== "mismatch") return;
+  const nodes = new Map(countryNodes.map((node) => [node.iso3, node]));
+  const visibleEdges = (tradeEdgesByYear.get(Number(currentYear)) || [])
+    .filter((edge) => nodes.has(edge.exporter_iso3) && nodes.has(edge.importer_iso3))
+    .slice(0, width < 700 ? 34 : 58);
+  if (!visibleEdges.length) return;
+
+  const localMax = Math.max(...visibleEdges.map((edge) => edge.trade_value_thousand_usd));
+  for (const edge of visibleEdges) {
+    const exporter = nodes.get(edge.exporter_iso3);
+    const importer = nodes.get(edge.importer_iso3);
+    const connected = hovered && (hovered.iso3 === edge.exporter_iso3 || hovered.iso3 === edge.importer_iso3);
+    drawTradeEdge(exporter, importer, edge, localMax, connected);
+  }
+}
+
+function drawTradeEdge(exporter, importer, edge, localMax, connected) {
+  const valueN = localMax ? edge.trade_value_thousand_usd / localMax : edge.value_norm;
+  const alpha = connected ? 210 : map(Math.sqrt(valueN), 0, 1, 24, 118);
+  const weight = connected ? map(Math.sqrt(valueN), 0, 1, 1.6, 4.8) : map(Math.sqrt(valueN), 0, 1, 0.45, 2.4);
+  const dx = importer.x - exporter.x;
+  const dy = importer.y - exporter.y;
+  const distance = Math.max(1, Math.hypot(dx, dy));
+  const bend = Math.min(88, distance * 0.18) * (exporter.iso3 < importer.iso3 ? 1 : -1);
+  const midX = (exporter.x + importer.x) / 2 - (dy / distance) * bend;
+  const midY = (exporter.y + importer.y) / 2 + (dx / distance) * bend;
+
+  noFill();
+  stroke(238, 168, 54, alpha);
+  strokeWeight(weight);
+  bezier(exporter.x, exporter.y, midX, midY, midX, midY, importer.x, importer.y);
+
+  const t = 0.78;
+  const px = bezierPoint(exporter.x, midX, midX, importer.x, t);
+  const py = bezierPoint(exporter.y, midY, midY, importer.y, t);
+  const tx = bezierTangent(exporter.x, midX, midX, importer.x, t);
+  const ty = bezierTangent(exporter.y, midY, midY, importer.y, t);
+  const angle = Math.atan2(ty, tx);
+  push();
+  translate(px, py);
+  rotate(angle);
+  noStroke();
+  fill(54, 145, 134, connected ? 245 : alpha + 38);
+  triangle(0, 0, -7, -3.5, -7, 3.5);
+  pop();
+}
+
 function drawCountryClusters() {
   for (const node of countryNodes) drawCluster(node);
 }
@@ -392,9 +449,10 @@ function drawLegend() {
   const x = 24;
   const y = 24;
   const visibleKeys = visibleMetrics();
+  const showTrade = currentScene === "mismatch" && (tradeEdgesByYear.get(Number(currentYear)) || []).length > 0;
   noStroke();
   fill(23, 16, 9, 185);
-  rect(x - 10, y - 12, width < 700 ? 178 : 222, 74, 12);
+  rect(x - 10, y - 12, width < 700 ? 210 : 270, showTrade ? 100 : 74, 12);
 
   fill(246, 232, 199, 232);
   textFont("Avenir Next Condensed, Gill Sans, sans-serif");
@@ -413,6 +471,19 @@ function drawLegend() {
     textSize(11);
     text(metric.label, lx + 18, y + 30);
     lx += width < 700 ? 54 : 68;
+  }
+
+  if (showTrade) {
+    stroke(238, 168, 54, 170);
+    strokeWeight(2);
+    line(x, y + 64, x + 28, y + 64);
+    noStroke();
+    fill(54, 145, 134, 220);
+    triangle(x + 34, y + 64, x + 26, y + 60, x + 26, y + 68);
+    fill(246, 232, 199, 205);
+    textStyle(NORMAL);
+    textSize(11);
+    text("crude trade: exporter → importer", x + 46, y + 64);
   }
 }
 
@@ -442,7 +513,8 @@ function drawTooltip() {
   const row = hovered.row;
   const padding = 14;
   const boxW = width < 700 ? 250 : 292;
-  const boxH = 178;
+  const connectedEdges = connectedTradeEdges(row.iso3);
+  const boxH = connectedEdges.length ? 226 : 178;
   const x = constrain(mouseX + 18, 12, width - boxW - 12);
   const y = constrain(mouseY - 22, 12, height - boxH - 12);
 
@@ -477,6 +549,29 @@ function drawTooltip() {
   textStyle(NORMAL);
   textAlign(LEFT, TOP);
   text(storyFor(row), x + padding, startY + 95, boxW - padding * 2, 42);
+
+  if (connectedEdges.length) {
+    fill(255, 248, 235, 210);
+    textFont("Avenir Next Condensed, Gill Sans, sans-serif");
+    textStyle(BOLD);
+    textAlign(LEFT, TOP);
+    textSize(11);
+    text("Top crude trade links", x + padding, startY + 139);
+    textStyle(NORMAL);
+    fill(255, 248, 235, 178);
+    connectedEdges.slice(0, 2).forEach((edge, index) => {
+      const isExporter = edge.exporter_iso3 === row.iso3;
+      const partner = isExporter ? edge.importer_iso3 : edge.exporter_iso3;
+      const direction = isExporter ? "exports to" : "imports from";
+      text(`${direction} ${partner}: ${money(edge.trade_value_thousand_usd)}`, x + padding, startY + 157 + index * 15);
+    });
+  }
+}
+
+function connectedTradeEdges(iso3) {
+  return (tradeEdgesByYear.get(Number(currentYear)) || [])
+    .filter((edge) => edge.exporter_iso3 === iso3 || edge.importer_iso3 === iso3)
+    .sort((a, b) => b.trade_value_thousand_usd - a.trade_value_thousand_usd);
 }
 
 function tooltipMetric(label, value, rgb, x, y, w) {
@@ -559,6 +654,12 @@ function normalizeRow(row) {
   }
 }
 
+function normalizeTradeEdge(edge) {
+  for (const field of ["year", "trade_value_thousand_usd", "quantity_metric_tons", "share_of_year_trade", "value_norm"]) {
+    edge[field] = Number(edge[field]);
+  }
+}
+
 function metric(label, value) {
   return `<div class="metric"><span>${label}</span><strong>${value ?? "n/a"}</strong></div>`;
 }
@@ -571,6 +672,11 @@ function percent(value) {
 function fixed(value) {
   if (value === null || Number.isNaN(value)) return "n/a";
   return Number(value).toFixed(2);
+}
+
+function money(value) {
+  if (value === null || Number.isNaN(value)) return "n/a";
+  return `$${Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(Number(value) * 1000)}`;
 }
 
 function safeNumber(value) {

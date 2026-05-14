@@ -14,13 +14,14 @@ The first compiled layer uses Our World in Data country-year oil metrics. The bi
 
 ```text
 data/canonical/oil_power_country_year.csv
+data/canonical/crude_trade_edges.csv
+app/public/data/crude_trade_edges.json
 ```
 
 Planned outputs:
 
 ```text
 data/canonical/oil_power_country_year.parquet
-data/canonical/crude_trade_edges.parquet
 data/canonical/crude_importer_year.parquet
 data/canonical/crude_exporter_year.parquet
 data/marts/oil_power_country_profiles.parquet
@@ -32,8 +33,11 @@ data/marts/oil_power_country_profiles.parquet
 python3 src/download/download_owid.py
 python3 src/transform/build_country_year.py
 python3 src/export/build_mvp_json.py
+python3 src/transform/build_crude_trade_edges.py
+python3 src/export/build_trade_json.py
 python3 src/quality/check_country_year.py
 python3 src/quality/check_mvp_json.py
+python3 src/quality/check_trade_json.py
 ```
 
 ## Interactive MVP
@@ -44,7 +48,7 @@ This branch contains a third no-map p5.js story canvas. Each highlighted country
 - `Pumps`: annual oil production
 - `Burns`: annual oil consumption
 
-Countries are placed by rough directional world-region logic, not by geographic boundaries, projections, outlines, or a map view. The `Has`, `Pumps`, and `Burns` tabs act as filters; `Mismatch` shows all three concentric layers together.
+Countries are placed by rough directional world-region logic, not by geographic boundaries, projections, outlines, or a map view. The `Has`, `Pumps`, and `Burns` tabs act as filters; `Mismatch` shows all three concentric layers together and overlays crude trade lines. Trade lines use CEPII BACI HS17 product `270900`; the line runs from exporter to importer, so the arrow points toward the buyer.
 
 ```bash
 python3 -m http.server 8000 --directory app
