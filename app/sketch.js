@@ -25,19 +25,91 @@ const SCENES = {
   },
 };
 
-const COUNTRIES = ["CAN", "USA", "VEN", "RUS", "SAU", "IRN", "IRQ", "CHN", "IND", "JPN", "KOR"];
+const COUNTRIES = [
+  "CAN",
+  "USA",
+  "MEX",
+  "VEN",
+  "COL",
+  "BRA",
+  "ARG",
+  "GBR",
+  "NOR",
+  "NLD",
+  "DEU",
+  "FRA",
+  "ESP",
+  "ITA",
+  "RUS",
+  "KAZ",
+  "AZE",
+  "TUR",
+  "DZA",
+  "LBY",
+  "EGY",
+  "NGA",
+  "AGO",
+  "SAU",
+  "IRN",
+  "IRQ",
+  "ARE",
+  "KWT",
+  "QAT",
+  "OMN",
+  "CHN",
+  "IND",
+  "PAK",
+  "JPN",
+  "KOR",
+  "IDN",
+  "MYS",
+  "THA",
+  "VNM",
+  "SGP",
+  "AUS",
+];
 const COUNTRY_LAYOUT = {
   CAN: { x: 0.16, y: 0.26, region: "Northwest" },
   USA: { x: 0.22, y: 0.49, region: "West" },
+  MEX: { x: 0.22, y: 0.62, region: "West" },
   VEN: { x: 0.30, y: 0.74, region: "Southwest" },
+  COL: { x: 0.25, y: 0.72, region: "Southwest" },
+  BRA: { x: 0.34, y: 0.82, region: "South" },
+  ARG: { x: 0.30, y: 0.90, region: "South" },
+  GBR: { x: 0.43, y: 0.28, region: "Northwest" },
+  NOR: { x: 0.46, y: 0.18, region: "Northwest" },
+  NLD: { x: 0.47, y: 0.34, region: "Northwest" },
+  DEU: { x: 0.50, y: 0.31, region: "Northwest" },
+  FRA: { x: 0.46, y: 0.40, region: "West" },
+  ESP: { x: 0.43, y: 0.48, region: "West" },
+  ITA: { x: 0.50, y: 0.44, region: "Middle" },
   RUS: { x: 0.56, y: 0.18, region: "North" },
+  KAZ: { x: 0.63, y: 0.29, region: "Northeast" },
+  AZE: { x: 0.57, y: 0.36, region: "Middle" },
+  TUR: { x: 0.54, y: 0.41, region: "Middle" },
+  DZA: { x: 0.46, y: 0.56, region: "Middle" },
+  LBY: { x: 0.50, y: 0.58, region: "Middle" },
+  EGY: { x: 0.54, y: 0.60, region: "Middle" },
+  NGA: { x: 0.44, y: 0.70, region: "South" },
+  AGO: { x: 0.47, y: 0.82, region: "South" },
   SAU: { x: 0.50, y: 0.52, region: "Middle" },
   IRN: { x: 0.60, y: 0.44, region: "Middle East" },
   IRQ: { x: 0.56, y: 0.64, region: "Middle East" },
+  ARE: { x: 0.61, y: 0.56, region: "Middle East" },
+  KWT: { x: 0.58, y: 0.54, region: "Middle East" },
+  QAT: { x: 0.63, y: 0.61, region: "Middle East" },
+  OMN: { x: 0.64, y: 0.68, region: "Middle East" },
   CHN: { x: 0.76, y: 0.43, region: "East" },
   IND: { x: 0.72, y: 0.72, region: "Southeast" },
+  PAK: { x: 0.68, y: 0.63, region: "Southeast" },
   JPN: { x: 0.90, y: 0.36, region: "Far East" },
   KOR: { x: 0.86, y: 0.24, region: "Northeast" },
+  IDN: { x: 0.80, y: 0.82, region: "Southeast" },
+  MYS: { x: 0.78, y: 0.74, region: "Southeast" },
+  THA: { x: 0.78, y: 0.66, region: "Southeast" },
+  VNM: { x: 0.82, y: 0.62, region: "Southeast" },
+  SGP: { x: 0.84, y: 0.76, region: "Southeast" },
+  AUS: { x: 0.86, y: 0.90, region: "Southeast" },
 };
 
 const METRICS = {
@@ -102,7 +174,7 @@ function setup() {
   const holder = document.getElementById("sketch-holder");
   const canvas = createCanvas(holder.clientWidth, holder.clientHeight);
   canvas.parent("sketch-holder");
-  pixelDensity(1);
+  pixelDensity(Math.min(2, window.devicePixelRatio || 1));
   frameRate(24);
 
   yearSlider = document.getElementById("year-slider");
@@ -150,6 +222,7 @@ function draw() {
   updateHover();
   drawDirectionalLinks();
   drawCountryClusters();
+  drawTitle();
   drawLegend();
   drawTooltip();
   updateDetailPanel();
@@ -199,8 +272,8 @@ function rebuildGraph() {
 }
 
 function targetFor(layout) {
-  const marginX = Math.max(96, width * 0.08);
-  const marginY = Math.max(86, height * 0.12);
+  const marginX = Math.max(74, width * 0.06);
+  const marginY = Math.max(78, height * 0.11);
   return {
     x: map(layout.x, 0, 1, marginX, width - marginX),
     y: map(layout.y, 0, 1, marginY, height - marginY),
@@ -209,8 +282,8 @@ function targetFor(layout) {
 
 function metricValues(row) {
   const values = {};
-  const maxR = width < 700 ? 36 : 54;
-  const minR = width < 700 ? 5 : 6;
+  const maxR = width < 700 ? 26 : 42;
+  const minR = width < 700 ? 4 : 5;
   for (const key of METRIC_ORDER) {
     const metric = METRICS[key];
     const share = safeNumber(row[metric.share]);
@@ -312,9 +385,26 @@ function drawCluster(node) {
   fill(255, 247, 226, hot ? 255 : 224);
   textFont("Avenir Next Condensed, Gill Sans, sans-serif");
   textStyle(BOLD);
-  textSize(width < 700 ? 11 : 13);
+  textSize(width < 700 ? 9 : 11);
   textAlign(CENTER, CENTER);
   text(node.iso3, node.x, node.y);
+}
+
+function drawTitle() {
+  const x = 24;
+  const y = height < 620 ? 78 : 96;
+  const titleSize = width < 700 ? 22 : 34;
+  noStroke();
+  fill(23, 16, 9, 150);
+  rect(x - 12, y - 16, width < 700 ? 292 : 458, titleSize * 2.15, 18);
+
+  fill(255, 248, 235, 238);
+  textFont("Iowan Old Style, Palatino Linotype, Georgia, serif");
+  textStyle(BOLD);
+  textAlign(LEFT, TOP);
+  textSize(titleSize);
+  textLeading(titleSize * 0.9);
+  text("Underground is not\nthe same as power.", x, y - 8);
 }
 
 function drawLegend() {
