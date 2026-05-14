@@ -220,7 +220,6 @@ function draw() {
   drawCompassFrame();
   updateGraph();
   updateHover();
-  drawDirectionalLinks();
   drawCountryClusters();
   drawTitle();
   drawLegend();
@@ -322,12 +321,6 @@ function drawBackground() {
   const step = 42;
   for (let x = -step; x < width + step; x += step) line(x, 0, x + width * 0.10, height);
   for (let y = 0; y < height; y += step) line(0, y, width, y - height * 0.06);
-
-  noStroke();
-  fill(209, 151, 55, 28);
-  ellipse(width * 0.56, height * 0.48, width * 0.92, height * 0.72);
-  fill(55, 128, 117, 18);
-  ellipse(width * 0.70, height * 0.52, width * 0.58, height * 0.52);
 }
 
 function drawCompassFrame() {
@@ -340,18 +333,6 @@ function drawCompassFrame() {
   noFill();
   ellipse(cx, cy, Math.min(width, height) * 0.60, Math.min(width, height) * 0.60);
   ellipse(cx, cy, Math.min(width, height) * 0.92, Math.min(width, height) * 0.92);
-}
-
-function drawDirectionalLinks() {
-  if (currentScene !== "mismatch") return;
-  const cx = width / 2;
-  const cy = height / 2;
-  for (const node of countryNodes) {
-    const score = mismatchScore(node.row);
-    stroke(246, 232, 199, map(score, 0, 1, 18, 96));
-    strokeWeight(map(score, 0, 1, 0.5, 2.2));
-    line(cx, cy, node.x, node.y);
-  }
 }
 
 function drawCountryClusters() {
