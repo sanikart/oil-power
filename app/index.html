@@ -15,12 +15,12 @@
           <h1 id="page-title">Underground is not the same as power.</h1>
         </div>
         <p class="lede">
-          Each country is a small knowledge graph: one circle for what it has, one for what it pumps, and one for what it burns.
+          Each country is one concentric knowledge-graph node: has, pumps, and burns are layered on the same center.
         </p>
       </section>
 
       <section class="controls" aria-label="Visualization controls">
-        <div class="scene-tabs" role="tablist" aria-label="Scene selector">
+        <div class="scene-tabs" role="tablist" aria-label="Metric filter">
           <button class="scene-tab" type="button" data-scene="has" role="tab" aria-selected="false">Has It</button>
           <button class="scene-tab" type="button" data-scene="pumps" role="tab" aria-selected="false">Pumps It</button>
           <button class="scene-tab" type="button" data-scene="burns" role="tab" aria-selected="false">Burns It</button>
@@ -36,13 +36,13 @@
         <div id="sketch-holder"></div>
         <aside class="detail-panel" id="detail-panel" aria-live="polite">
           <p class="panel-eyebrow">Selected country</p>
-          <h2>Hover a circle</h2>
-          <p class="panel-copy">Each country has three linked circles. Placement is directional and abstract: no map, no projection, no borders.</p>
+          <h2>Hover a country</h2>
+          <p class="panel-copy">Hovering any ring highlights the whole country cluster. The filters isolate one layer at a time.</p>
         </aside>
       </section>
 
       <section class="caption" id="scene-caption">
-        Mismatch mode keeps all three circles visible and makes the contradiction inside each country cluster easier to compare.
+        All three concentric circles are visible: has, pumps, and burns. The mismatch is inside each country, not a map shape.
       </section>
     </main>
     <script src="./sketch.js"></script>

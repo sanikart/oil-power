@@ -3,41 +3,41 @@ const SCENES = {
     label: "Has It",
     metric: "has",
     caption:
-      "Reserve circles show who has oil underground. The position is directional and abstract, not a map projection.",
+      "Filter: only the reserve circle is visible. This shows who has oil underground without implying they control production or demand.",
   },
   pumps: {
     label: "Pumps It",
     metric: "pumps",
     caption:
-      "Production circles show who turns underground oil into supply. Big reserve bodies do not always become big pump bodies.",
+      "Filter: only the production circle is visible. This shows who actually turns oil into supply.",
   },
   burns: {
     label: "Burns It",
     metric: "burns",
     caption:
-      "Consumption circles show demand power. China, India, Japan, South Korea, and the United States pull oil through use.",
+      "Filter: only the consumption circle is visible. This shows demand power: who burns and pulls oil through the system.",
   },
   mismatch: {
     label: "Mismatch",
-    metric: "mismatch",
+    metric: "all",
     caption:
-      "Mismatch mode keeps all three circles visible and makes the contradiction inside each country cluster easier to compare.",
+      "All three concentric circles are visible: has, pumps, and burns. The mismatch is inside each country, not a map shape.",
   },
 };
 
 const COUNTRIES = ["CAN", "USA", "VEN", "RUS", "SAU", "IRN", "IRQ", "CHN", "IND", "JPN", "KOR"];
 const COUNTRY_LAYOUT = {
-  CAN: { x: 0.18, y: 0.24, label: "Canada", region: "Northwest" },
-  USA: { x: 0.22, y: 0.44, label: "United States", region: "West" },
-  VEN: { x: 0.27, y: 0.68, label: "Venezuela", region: "Southwest" },
-  RUS: { x: 0.58, y: 0.17, label: "Russia", region: "North" },
-  SAU: { x: 0.50, y: 0.48, label: "Saudi Arabia", region: "Middle" },
-  IRN: { x: 0.58, y: 0.42, label: "Iran", region: "Middle East" },
-  IRQ: { x: 0.54, y: 0.55, label: "Iraq", region: "Middle East" },
-  CHN: { x: 0.76, y: 0.42, label: "China", region: "East" },
-  IND: { x: 0.70, y: 0.66, label: "India", region: "Southeast" },
-  JPN: { x: 0.88, y: 0.35, label: "Japan", region: "Far East" },
-  KOR: { x: 0.84, y: 0.27, label: "South Korea", region: "Northeast" },
+  CAN: { x: 0.16, y: 0.26, region: "Northwest" },
+  USA: { x: 0.22, y: 0.49, region: "West" },
+  VEN: { x: 0.30, y: 0.74, region: "Southwest" },
+  RUS: { x: 0.56, y: 0.18, region: "North" },
+  SAU: { x: 0.50, y: 0.52, region: "Middle" },
+  IRN: { x: 0.60, y: 0.44, region: "Middle East" },
+  IRQ: { x: 0.56, y: 0.64, region: "Middle East" },
+  CHN: { x: 0.76, y: 0.43, region: "East" },
+  IND: { x: 0.72, y: 0.72, region: "Southeast" },
+  JPN: { x: 0.90, y: 0.36, region: "Far East" },
+  KOR: { x: 0.86, y: 0.24, region: "Northeast" },
 };
 
 const METRICS = {
@@ -47,7 +47,6 @@ const METRICS = {
     share: "global_reserve_share",
     rank: "reserve_rank",
     color: [205, 78, 51],
-    offset: [-0.92, -0.46],
   },
   pumps: {
     label: "Pumps",
@@ -55,7 +54,6 @@ const METRICS = {
     share: "global_production_share",
     rank: "production_rank",
     color: [223, 158, 47],
-    offset: [0.92, -0.42],
   },
   burns: {
     label: "Burns",
@@ -63,9 +61,9 @@ const METRICS = {
     share: "global_consumption_share",
     rank: "consumption_rank",
     color: [54, 145, 134],
-    offset: [0.02, 1.0],
   },
 };
+const METRIC_ORDER = ["has", "pumps", "burns"];
 
 const NUMERIC_FIELDS = [
   "year",
@@ -88,7 +86,6 @@ let rowsByYear = new Map();
 let currentYear = 2020;
 let currentScene = "mismatch";
 let countryNodes = [];
-let metricNodes = [];
 let hovered = null;
 let selected = null;
 let yearSlider;
@@ -105,8 +102,8 @@ function setup() {
   const holder = document.getElementById("sketch-holder");
   const canvas = createCanvas(holder.clientWidth, holder.clientHeight);
   canvas.parent("sketch-holder");
-  pixelDensity(Math.min(2, window.devicePixelRatio || 1));
-  frameRate(30);
+  pixelDensity(1);
+  frameRate(24);
 
   yearSlider = document.getElementById("year-slider");
   yearLabel = document.getElementById("year-label");
@@ -150,10 +147,9 @@ function draw() {
   drawBackground();
   drawCompassFrame();
   updateGraph();
-  drawLinks();
-  drawCountryNodes();
-  drawMetricNodes();
-  drawCenterLegend();
+  drawDirectionalLinks();
+  drawCountryClusters();
+  drawLegend();
   updateHover();
   updateDetailPanel();
 }
@@ -174,73 +170,73 @@ function setScene(scene) {
 function rebuildGraph() {
   const rows = rowsByYear.get(Number(currentYear)) || [];
   const rowByIso = new Map(rows.map((row) => [row.iso3, row]));
-  countryNodes = [];
-  metricNodes = [];
+  const existing = new Map(countryNodes.map((node) => [node.iso3, node]));
 
-  for (const iso3 of COUNTRIES) {
+  countryNodes = COUNTRIES.map((iso3) => {
     const row = rowByIso.get(iso3);
-    if (!row) continue;
+    if (!row) return null;
     const layout = COUNTRY_LAYOUT[iso3];
-    const anchor = makeCountryNode(row, layout);
-    countryNodes.push(anchor);
+    const target = targetFor(layout);
+    const previous = existing.get(iso3);
+    const metrics = metricValues(row);
+    return {
+      type: "country",
+      iso3,
+      country_name: row.country_name,
+      region: layout.region,
+      row,
+      metrics,
+      tx: target.x,
+      ty: target.y,
+      x: previous ? previous.x : target.x,
+      y: previous ? previous.y : target.y,
+      vx: 0,
+      vy: 0,
+      maxR: Math.max(...Object.values(metrics).map((metric) => metric.r)),
+    };
+  }).filter(Boolean);
+}
 
-    for (const metricKey of Object.keys(METRICS)) {
-      metricNodes.push(makeMetricNode(anchor, metricKey));
-    }
+function targetFor(layout) {
+  const marginX = Math.max(96, width * 0.08);
+  const marginY = Math.max(86, height * 0.12);
+  return {
+    x: map(layout.x, 0, 1, marginX, width - marginX),
+    y: map(layout.y, 0, 1, marginY, height - marginY),
+  };
+}
+
+function metricValues(row) {
+  const values = {};
+  const maxR = width < 700 ? 36 : 54;
+  const minR = width < 700 ? 5 : 6;
+  for (const key of METRIC_ORDER) {
+    const metric = METRICS[key];
+    const share = safeNumber(row[metric.share]);
+    const value = row[metric.field];
+    const r = value > 0 ? map(Math.sqrt(share), 0, Math.sqrt(0.22), minR, maxR, true) : minR * 0.8;
+    values[key] = {
+      ...metric,
+      key,
+      share,
+      value,
+      rank: row[metric.rank],
+      r,
+    };
   }
-}
-
-function makeCountryNode(row, layout) {
-  const marginX = Math.max(82, width * 0.09);
-  const marginY = Math.max(76, height * 0.12);
-  const tx = map(layout.x, 0, 1, marginX, width - marginX);
-  const ty = map(layout.y, 0, 1, marginY, height - marginY);
-  return {
-    type: "country",
-    iso3: row.iso3,
-    country_name: row.country_name,
-    region: layout.region,
-    row,
-    tx,
-    ty,
-    x: tx,
-    y: ty,
-    r: 7,
-  };
-}
-
-function makeMetricNode(anchor, metricKey) {
-  const metric = METRICS[metricKey];
-  const share = safeNumber(anchor.row[metric.share]);
-  const value = anchor.row[metric.field];
-  const base = Math.min(width, height);
-  const clusterRadius = constrain(base * 0.055, 34, 54);
-  const rawRadius = map(Math.sqrt(Math.max(0, share)), 0, Math.sqrt(0.22), 4, 42);
-  const r = value > 0 ? constrain(rawRadius, 5, 42) : 4;
-  return {
-    type: "metric",
-    metricKey,
-    iso3: anchor.iso3,
-    country_name: anchor.country_name,
-    region: anchor.region,
-    row: anchor.row,
-    parent: anchor,
-    share,
-    value,
-    rank: anchor.row[metric.rank],
-    r,
-    tx: constrain(anchor.tx + metric.offset[0] * clusterRadius, 36, width - 36),
-    ty: constrain(anchor.ty + metric.offset[1] * clusterRadius, 36, height - 36),
-    x: constrain(anchor.tx + metric.offset[0] * clusterRadius, 36, width - 36),
-    y: constrain(anchor.ty + metric.offset[1] * clusterRadius, 36, height - 36),
-  };
+  return values;
 }
 
 function updateGraph() {
-  for (const node of [...countryNodes, ...metricNodes]) {
-    const drift = node.type === "metric" ? sin(frameCount * 0.025 + node.x * 0.01 + node.y * 0.01) * 1.2 : 0;
-    node.x += (node.tx - node.x) * 0.09;
-    node.y += (node.ty + drift - node.y) * 0.09;
+  for (const node of countryNodes) {
+    const driftX = sin(frameCount * 0.018 + node.ty * 0.01) * 1.5;
+    const driftY = cos(frameCount * 0.016 + node.tx * 0.01) * 1.2;
+    node.vx += (node.tx + driftX - node.x) * 0.045;
+    node.vy += (node.ty + driftY - node.y) * 0.045;
+    node.vx *= 0.78;
+    node.vy *= 0.78;
+    node.x += node.vx;
+    node.y += node.vy;
   }
 }
 
@@ -249,143 +245,134 @@ function drawBackground() {
   noFill();
   stroke(255, 235, 194, 12);
   strokeWeight(1);
-  const step = 36;
-  for (let x = -step; x < width + step; x += step) line(x, 0, x + width * 0.12, height);
-  for (let y = 0; y < height; y += step) line(0, y, width, y - height * 0.08);
+  const step = 42;
+  for (let x = -step; x < width + step; x += step) line(x, 0, x + width * 0.10, height);
+  for (let y = 0; y < height; y += step) line(0, y, width, y - height * 0.06);
 
-  const glow = drawingContext.createRadialGradient(width * 0.58, height * 0.45, 20, width * 0.58, height * 0.45, width * 0.75);
-  glow.addColorStop(0, "rgba(209, 151, 55, 0.22)");
-  glow.addColorStop(0.45, "rgba(55, 128, 117, 0.10)");
-  glow.addColorStop(1, "rgba(23, 16, 9, 0)");
-  drawingContext.fillStyle = glow;
-  drawingContext.fillRect(0, 0, width, height);
+  noStroke();
+  fill(209, 151, 55, 28);
+  ellipse(width * 0.56, height * 0.48, width * 0.92, height * 0.72);
+  fill(55, 128, 117, 18);
+  ellipse(width * 0.70, height * 0.52, width * 0.58, height * 0.52);
 }
 
 function drawCompassFrame() {
   const cx = width / 2;
   const cy = height / 2;
-  stroke(246, 232, 199, 42);
+  stroke(246, 232, 199, 38);
   strokeWeight(1);
-  line(cx, 30, cx, height - 30);
-  line(30, cy, width - 30, cy);
+  line(cx, 36, cx, height - 36);
+  line(36, cy, width - 36, cy);
   noFill();
-  ellipse(cx, cy, Math.min(width, height) * 0.62, Math.min(width, height) * 0.62);
+  ellipse(cx, cy, Math.min(width, height) * 0.60, Math.min(width, height) * 0.60);
   ellipse(cx, cy, Math.min(width, height) * 0.92, Math.min(width, height) * 0.92);
 
   noStroke();
-  fill(246, 232, 199, 150);
+  fill(246, 232, 199, 145);
   textFont("Avenir Next Condensed, Gill Sans, sans-serif");
-  textSize(11);
+  textSize(width < 700 ? 10 : 12);
   textStyle(BOLD);
   textAlign(CENTER, CENTER);
-  text("NORTH", cx, 20);
-  text("SOUTH", cx, height - 18);
+  text("NORTH", cx, 22);
+  text("SOUTH", cx, height - 22);
   textAlign(LEFT, CENTER);
-  text("WEST", 18, cy);
+  text("WEST", 20, cy);
   textAlign(RIGHT, CENTER);
-  text("EAST", width - 18, cy);
+  text("EAST", width - 20, cy);
 }
 
-function drawLinks() {
-  for (const node of metricNodes) {
-    const active = isMetricActive(node.metricKey);
-    const metric = METRICS[node.metricKey];
-    const alpha = active ? 132 : 42;
-    stroke(metric.color[0], metric.color[1], metric.color[2], alpha);
-    strokeWeight(active ? 1.4 : 0.8);
-    line(node.parent.x, node.parent.y, node.x, node.y);
-  }
-
-  if (currentScene === "mismatch") {
-    for (const country of countryNodes) {
-      const score = mismatchScore(country.row);
-      stroke(246, 232, 199, map(score, 0, 1, 18, 105));
-      strokeWeight(map(score, 0, 1, 0.5, 2.2));
-      line(width / 2, height / 2, country.x, country.y);
-    }
-  }
-}
-
-function drawCountryNodes() {
-  for (const node of countryNodes) {
-    const score = mismatchScore(node.row);
-    noStroke();
-    fill(246, 232, 199, currentScene === "mismatch" ? 150 + score * 90 : 150);
-    circle(node.x, node.y, 12 + score * 8);
-
-    fill(246, 232, 199, 218);
-    textFont("Avenir Next Condensed, Gill Sans, sans-serif");
-    textSize(width < 700 ? 10 : 12);
-    textStyle(BOLD);
-    textAlign(CENTER, CENTER);
-    text(node.iso3, node.x, node.y - 18);
-  }
-}
-
-function drawMetricNodes() {
-  for (const node of metricNodes) {
-    const metric = METRICS[node.metricKey];
-    const active = isMetricActive(node.metricKey);
-    const isHot = hovered === node || selected === node || hovered === node.parent || selected === node.parent;
-    const alpha = active ? 235 : 78;
-    const pulse = isHot ? 1.18 : 1;
-
-    if (currentScene === "mismatch") drawMismatchHalo(node);
-
-    stroke(metric.color[0], metric.color[1], metric.color[2], active ? 238 : 92);
-    strokeWeight(active ? 2.1 : 1.1);
-    if (node.value > 0) fill(metric.color[0], metric.color[1], metric.color[2], alpha);
-    else fill(23, 16, 9, 90);
-    circle(node.x, node.y, node.r * 2 * pulse);
-
-    if (active || isHot || node.r > 16) {
-      fill(255, 247, 226, active ? 232 : 140);
-      noStroke();
-      textFont("Avenir Next Condensed, Gill Sans, sans-serif");
-      textSize(constrain(node.r * 0.55, 8, 13));
-      textStyle(BOLD);
-      textAlign(CENTER, CENTER);
-      text(metric.label, node.x, node.y);
-    }
-  }
-}
-
-function drawMismatchHalo(node) {
-  const score = mismatchScore(node.row);
-  const metric = METRICS[node.metricKey];
-  noFill();
-  stroke(metric.color[0], metric.color[1], metric.color[2], 34 + score * 84);
-  strokeWeight(1);
-  circle(node.x, node.y, node.r * 2 + 10 + score * 16);
-}
-
-function drawCenterLegend() {
+function drawDirectionalLinks() {
+  if (currentScene !== "mismatch") return;
   const cx = width / 2;
   const cy = height / 2;
-  noStroke();
-  fill(23, 16, 9, 190);
-  rectMode(CENTER);
-  rect(cx, cy, 154, 58, 999);
-  rectMode(CORNER);
+  for (const node of countryNodes) {
+    const score = mismatchScore(node.row);
+    stroke(246, 232, 199, map(score, 0, 1, 18, 96));
+    strokeWeight(map(score, 0, 1, 0.5, 2.2));
+    line(cx, cy, node.x, node.y);
+  }
+}
 
-  fill(246, 232, 199, 224);
+function drawCountryClusters() {
+  for (const node of countryNodes) drawCluster(node);
+}
+
+function drawCluster(node) {
+  const hot = hovered === node || selected === node;
+  const visibleKeys = visibleMetrics();
+  const visible = visibleKeys.map((key) => node.metrics[key]).sort((a, b) => b.r - a.r);
+  const haloR = Math.max(...visible.map((metric) => metric.r), 10) + (hot ? 17 : 9);
+
+  if (hot) {
+    noFill();
+    stroke(255, 246, 221, 190);
+    strokeWeight(2.5);
+    circle(node.x, node.y, haloR * 2);
+  }
+
+  for (const metric of visible) {
+    const active = currentScene === "mismatch" || SCENES[currentScene].metric === metric.key;
+    const alpha = currentScene === "mismatch" ? 72 : 184;
+    const weight = active ? (hot ? 4 : 2.6) : 1.2;
+    fill(metric.color[0], metric.color[1], metric.color[2], alpha);
+    stroke(metric.color[0], metric.color[1], metric.color[2], hot ? 255 : 210);
+    strokeWeight(weight);
+    circle(node.x, node.y, metric.r * 2);
+  }
+
+  noStroke();
+  fill(255, 247, 226, hot ? 255 : 224);
   textFont("Avenir Next Condensed, Gill Sans, sans-serif");
   textStyle(BOLD);
+  textSize(width < 700 ? 11 : 13);
   textAlign(CENTER, CENTER);
-  textSize(12);
-  text("OIL POWER", cx, cy - 10);
+  text(node.iso3, node.x, node.y);
+
+  fill(255, 247, 226, hot ? 226 : 150);
   textStyle(NORMAL);
-  textSize(10);
-  text("has / pumps / burns", cx, cy + 10);
+  textSize(width < 700 ? 9 : 10);
+  text(node.region, node.x, node.y + haloR + 13);
+}
+
+function drawLegend() {
+  const x = 24;
+  const y = 24;
+  const visibleKeys = visibleMetrics();
+  noStroke();
+  fill(23, 16, 9, 185);
+  rect(x - 10, y - 12, width < 700 ? 178 : 222, 74, 12);
+
+  fill(246, 232, 199, 232);
+  textFont("Avenir Next Condensed, Gill Sans, sans-serif");
+  textStyle(BOLD);
+  textSize(12);
+  textAlign(LEFT, CENTER);
+  text(`${SCENES[currentScene].label.toUpperCase()} / ${currentYear}`, x, y);
+
+  let lx = x;
+  for (const key of visibleKeys) {
+    const metric = METRICS[key];
+    fill(metric.color[0], metric.color[1], metric.color[2], 210);
+    circle(lx + 6, y + 30, 11);
+    fill(246, 232, 199, 205);
+    textStyle(NORMAL);
+    textSize(11);
+    text(metric.label, lx + 18, y + 30);
+    lx += width < 700 ? 54 : 68;
+  }
+}
+
+function visibleMetrics() {
+  const metric = SCENES[currentScene].metric;
+  return metric === "all" ? METRIC_ORDER : [metric];
 }
 
 function updateHover() {
   hovered = null;
-  const allNodes = [...metricNodes, ...countryNodes];
   let best = null;
   let bestDistance = Infinity;
-  for (const node of allNodes) {
-    const hitRadius = node.type === "metric" ? Math.max(node.r, 9) + 6 : 18;
+  for (const node of countryNodes) {
+    const hitRadius = Math.max(...visibleMetrics().map((key) => node.metrics[key].r), 10) + 16;
     const d = dist(mouseX, mouseY, node.x, node.y);
     if (d < hitRadius && d < bestDistance) {
       best = node;
@@ -404,24 +391,23 @@ function mousePressed() {
 
 function updateDetailPanel() {
   const node = hovered || selected;
-  const key = node ? `${currentYear}:${currentScene}:${node.iso3}:${node.type}:${node.metricKey || "country"}` : `${currentYear}:${currentScene}:empty`;
+  const key = node ? `${currentYear}:${currentScene}:${node.iso3}` : `${currentYear}:${currentScene}:empty`;
   if (key === lastPanelKey) return;
   lastPanelKey = key;
 
   if (!node) {
     detailPanel.innerHTML = `
       <p class="panel-eyebrow">${SCENES[currentScene].label} / ${currentYear}</p>
-      <h2>Hover a circle</h2>
-      <p class="panel-copy">Each country has three linked circles: has, pumps, and burns. Placement is a directional graph, not a map.</p>
+      <h2>Hover a country</h2>
+      <p class="panel-copy">Each country is one concentric cluster. Use the filters to isolate has, pumps, or burns.</p>
     `;
     return;
   }
 
   const row = node.row;
-  const title = node.type === "metric" ? `${row.country_name}: ${METRICS[node.metricKey].label}` : row.country_name;
   detailPanel.innerHTML = `
     <p class="panel-eyebrow">${node.region} / ${currentYear}</p>
-    <h2>${title}</h2>
+    <h2>${row.country_name}</h2>
     <p class="panel-copy">${storyFor(row)}</p>
     <div class="metric-grid">
       ${metric("Has share", percent(row.global_reserve_share))}
@@ -435,10 +421,6 @@ function updateDetailPanel() {
   `;
 }
 
-function isMetricActive(metricKey) {
-  return currentScene === "mismatch" || SCENES[currentScene].metric === metricKey;
-}
-
 function mismatchScore(row) {
   const reserve = safeNumber(row.global_reserve_share);
   const production = safeNumber(row.global_production_share);
@@ -447,13 +429,13 @@ function mismatchScore(row) {
 }
 
 function storyFor(row) {
-  if (row.iso3 === "VEN") return "Huge reserve circle, much smaller pump and burn circles: oil underground is not the same as oil power.";
-  if (row.iso3 === "USA") return "All three circles matter: the United States is a production and demand power, but not the largest reserve body.";
-  if (row.iso3 === "CHN" || row.iso3 === "IND") return "Demand power shows up through the burn circle more than the has circle.";
-  if (row.iso3 === "SAU" || row.iso3 === "RUS") return "Production-side power: reserve mass is connected to a large pump circle.";
-  if (row.iso3 === "JPN" || row.iso3 === "KOR") return "Demand-heavy, reserve-light: useful later when the trade chapter explains who supplies them.";
-  if (row.iso3 === "CAN" || row.iso3 === "IRN" || row.iso3 === "IRQ") return "A reserve-heavy country where the relative pump circle tells whether underground oil becomes supply.";
-  return "Compare the three circles to see how reserves, production, and consumption split apart.";
+  if (row.iso3 === "VEN") return "A giant has-circle with a much smaller pump circle: oil underground is not the same as oil power.";
+  if (row.iso3 === "USA") return "All three rings matter: the United States is both a production and demand power, with a smaller reserve share than the biggest reserve states.";
+  if (row.iso3 === "CHN" || row.iso3 === "IND") return "The burn ring dominates the story: demand power is larger than reserve power.";
+  if (row.iso3 === "SAU" || row.iso3 === "RUS") return "The has and pumps rings stay close together: reserve mass becomes production-side power.";
+  if (row.iso3 === "JPN" || row.iso3 === "KOR") return "The burn ring appears without meaningful has or pump rings, setting up the later trade chapter.";
+  if (row.iso3 === "CAN" || row.iso3 === "IRN" || row.iso3 === "IRQ") return "Compare the reserve ring against the pump ring to see whether underground oil becomes supply.";
+  return "Compare the concentric rings to see how reserves, production, and consumption split apart.";
 }
 
 function normalizeRow(row) {

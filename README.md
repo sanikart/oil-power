@@ -38,13 +38,13 @@ python3 src/quality/check_mvp_json.py
 
 ## Interactive MVP
 
-This branch contains a third no-map p5.js story canvas. Each highlighted country is drawn as an abstract knowledge-graph cluster with three circles:
+This branch contains a third no-map p5.js story canvas. Each highlighted country is drawn as an abstract concentric knowledge-graph cluster with three circles:
 
 - `Has`: proved oil reserves
 - `Pumps`: annual oil production
 - `Burns`: annual oil consumption
 
-Countries are placed by rough directional world-region logic, not by geographic boundaries, projections, outlines, or a map view.
+Countries are placed by rough directional world-region logic, not by geographic boundaries, projections, outlines, or a map view. The `Has`, `Pumps`, and `Burns` tabs act as filters; `Mismatch` shows all three concentric layers together.
 
 ```bash
 python3 -m http.server 8000 --directory app

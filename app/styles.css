@@ -38,10 +38,10 @@ input {
 }
 
 .shell {
-  width: min(1440px, 100%);
+  width: 100%;
   min-height: 100vh;
   margin: 0 auto;
-  padding: clamp(18px, 3vw, 42px);
+  padding: clamp(16px, 2.2vw, 34px);
   overflow-x: hidden;
 }
 
@@ -144,18 +144,16 @@ input[type="range"] {
 
 .stage {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 18px;
+  display: block;
   min-width: 0;
-  min-height: 620px;
+  min-height: clamp(660px, 72vh, 900px);
   margin-top: 18px;
 }
 
 #sketch-holder {
   width: 100%;
   min-width: 0;
-  min-height: 620px;
+  min-height: clamp(660px, 72vh, 900px);
   overflow: hidden;
   border: 1px solid rgba(36, 24, 12, 0.2);
   background: #1c140c;
@@ -167,11 +165,16 @@ input[type="range"] {
 }
 
 .detail-panel {
-  align-self: stretch;
-  min-height: 260px;
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: min(330px, calc(100% - 36px));
+  min-height: 220px;
   padding: 20px;
   border: 1px solid rgba(36, 24, 12, 0.22);
-  background: rgba(255, 248, 235, 0.68);
+  background: rgba(255, 248, 235, 0.82);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 20px 60px rgba(23, 16, 9, 0.22);
 }
 
 .detail-panel h2 {
@@ -208,7 +211,7 @@ input[type="range"] {
 }
 
 .caption {
-  max-width: 880px;
+  max-width: 1120px;
   margin-top: 18px;
   color: #4a3d30;
   font-size: 1.08rem;
@@ -217,8 +220,7 @@ input[type="range"] {
 }
 
 @media (max-width: 900px) {
-  .intro,
-  .stage {
+  .intro {
     grid-template-columns: 1fr;
   }
 
@@ -228,18 +230,17 @@ input[type="range"] {
   }
 
   #sketch-holder {
-    min-height: 560px;
+    min-height: 620px;
   }
 
   .stage {
-    min-height: auto;
+    min-height: 620px;
   }
 }
 
 @media (max-width: 700px) {
   .shell {
     width: 100%;
-    max-width: 380px;
     padding: 18px;
   }
 
@@ -269,7 +270,18 @@ input[type="range"] {
   }
 
   #sketch-holder {
-    min-height: 500px;
+    min-height: 580px;
+  }
+
+  .stage {
+    min-height: auto;
+  }
+
+  .detail-panel {
+    position: static;
+    width: 100%;
+    min-height: 0;
+    margin-top: 12px;
   }
 }
 
