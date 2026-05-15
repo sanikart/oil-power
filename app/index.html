@@ -20,16 +20,22 @@
       </section>
 
       <section class="controls" aria-label="Visualization controls">
-        <div class="scene-tabs" role="tablist" aria-label="Metric filter">
-          <button class="scene-tab" type="button" data-scene="has" role="tab" aria-selected="false">Has It</button>
-          <button class="scene-tab" type="button" data-scene="pumps" role="tab" aria-selected="false">Pumps It</button>
-          <button class="scene-tab" type="button" data-scene="burns" role="tab" aria-selected="false">Burns It</button>
-          <button class="scene-tab active" type="button" data-scene="mismatch" role="tab" aria-selected="true">Mismatch</button>
+        <div class="filter-copy">
+          <strong>Overview</strong> shows all oil-power layers and crude trade flows. <strong>Has</strong> = proved reserves, <strong>Pumps</strong> = production, <strong>Burns</strong> = consumption.
         </div>
-        <label class="year-control">
-          <span>Year <strong id="year-label">2020</strong></span>
-          <input id="year-slider" type="range" min="1980" max="2020" value="2020" step="1" />
-        </label>
+        <div class="scene-tabs" aria-label="Metric filters">
+          <button class="scene-tab active" type="button" data-filter="overview" aria-pressed="true">Overview</button>
+          <button class="scene-tab" type="button" data-filter="has" aria-pressed="false">Has</button>
+          <button class="scene-tab" type="button" data-filter="pumps" aria-pressed="false">Pumps</button>
+          <button class="scene-tab" type="button" data-filter="burns" aria-pressed="false">Burns</button>
+        </div>
+        <div class="timeline-row">
+          <button class="play-button" id="play-button" type="button" aria-pressed="false">Play</button>
+          <label class="year-control">
+            <span>Year <strong id="year-label">2020</strong></span>
+            <input id="year-slider" type="range" min="1980" max="2020" value="2020" step="1" />
+          </label>
+        </div>
       </section>
 
       <section class="stage" aria-label="Oil power visualization">
@@ -42,9 +48,13 @@
       </section>
 
       <section class="caption" id="scene-caption">
-        All three concentric circles are visible: has, pumps, and burns. The mismatch is inside each country, not a map shape.
+        Overview shows all three oil-power layers plus crude trade flows. Has = proved reserves, Pumps = production, Burns = consumption.
+      </section>
+
+      <section class="credits" aria-label="Credits">
+        Data: Our World in Data oil reserves, production, consumption. Trade: CEPII BACI HS17, crude petroleum HS 270900. Visualization: Sanika + Codex.
       </section>
     </main>
-    <script src="./sketch.js?v=triad-trade-1"></script>
+    <script src="./sketch.js?v=triad-controls-1"></script>
   </body>
 </html>

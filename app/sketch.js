@@ -1,27 +1,8 @@
 const SCENES = {
-  has: {
-    label: "Has It",
-    metric: "has",
+  overview: {
+    label: "Overview",
     caption:
-      "Filter: only the reserve circle is visible. This shows who has oil underground without implying they control production or demand.",
-  },
-  pumps: {
-    label: "Pumps It",
-    metric: "pumps",
-    caption:
-      "Filter: only the production circle is visible. This shows who actually turns oil into supply.",
-  },
-  burns: {
-    label: "Burns It",
-    metric: "burns",
-    caption:
-      "Filter: only the consumption circle is visible. This shows demand power: who burns and pulls oil through the system.",
-  },
-  mismatch: {
-    label: "Mismatch",
-    metric: "all",
-    caption:
-      "All three concentric circles are visible: has, pumps, and burns. The mismatch is inside each country, not a map shape.",
+      "Overview shows all three oil-power layers plus crude trade flows. Has = proved reserves, Pumps = production, Burns = consumption.",
   },
 };
 
@@ -158,12 +139,16 @@ let tradeData;
 let rowsByYear = new Map();
 let tradeEdgesByYear = new Map();
 let currentYear = 2020;
-let currentScene = "mismatch";
+let currentScene = "overview";
+let activeMetricKeys = new Set(METRIC_ORDER);
+let isPlaying = false;
+let playTimer = null;
 let countryNodes = [];
 let hovered = null;
 let selected = null;
 let yearSlider;
 let yearLabel;
+let playButton;
 let detailPanel;
 let captionEl;
 let lastPanelKey = "";
@@ -182,6 +167,7 @@ function setup() {
 
   yearSlider = document.getElementById("year-slider");
   yearLabel = document.getElementById("year-label");
+  playButton = document.getElementById("play-button");
   detailPanel = document.getElementById("detail-panel");
   captionEl = document.getElementById("scene-caption");
 
@@ -204,17 +190,15 @@ function setup() {
   yearLabel.textContent = currentYear;
 
   document.querySelectorAll(".scene-tab").forEach((button) => {
-    button.addEventListener("click", () => setScene(button.dataset.scene));
+    button.addEventListener("click", () => setFilter(button.dataset.filter));
   });
   yearSlider.addEventListener("input", () => {
-    currentYear = Number(yearSlider.value);
-    yearLabel.textContent = currentYear;
-    selected = null;
-    lastPanelKey = "";
-    rebuildGraph();
+    stopPlayback();
+    setYear(Number(yearSlider.value));
   });
+  playButton.addEventListener("click", togglePlayback);
 
-  setScene("mismatch");
+  setFilter("overview");
 }
 
 function windowResized() {
@@ -236,17 +220,71 @@ function draw() {
   updateDetailPanel();
 }
 
-function setScene(scene) {
-  currentScene = scene;
+function setFilter(filter) {
+  if (filter === "overview") {
+    currentScene = "overview";
+    activeMetricKeys = new Set(METRIC_ORDER);
+  } else {
+    currentScene = "custom";
+    if (activeMetricKeys.size === METRIC_ORDER.length) activeMetricKeys = new Set();
+    if (activeMetricKeys.has(filter)) activeMetricKeys.delete(filter);
+    else activeMetricKeys.add(filter);
+    if (!activeMetricKeys.size) {
+      currentScene = "overview";
+      activeMetricKeys = new Set(METRIC_ORDER);
+    }
+  }
+
   document.querySelectorAll(".scene-tab").forEach((button) => {
-    const active = button.dataset.scene === scene;
+    const buttonFilter = button.dataset.filter;
+    const active = buttonFilter === "overview" ? currentScene === "overview" : currentScene !== "overview" && activeMetricKeys.has(buttonFilter);
     button.classList.toggle("active", active);
-    button.setAttribute("aria-selected", String(active));
+    button.setAttribute("aria-pressed", String(active));
   });
-  captionEl.textContent = SCENES[scene].caption;
+  captionEl.textContent = currentScene === "overview" ? SCENES.overview.caption : `${metricLabel()} filter active.`;
   selected = null;
   lastPanelKey = "";
   rebuildGraph();
+}
+
+function setYear(year) {
+  currentYear = year;
+  yearSlider.value = year;
+  yearLabel.textContent = currentYear;
+  selected = null;
+  lastPanelKey = "";
+  rebuildGraph();
+}
+
+function togglePlayback() {
+  if (isPlaying) {
+    stopPlayback();
+    return;
+  }
+  const maxYear = Number(yearSlider.max);
+  if (currentYear >= maxYear) setYear(Number(yearSlider.min));
+  isPlaying = true;
+  playButton.textContent = "Pause";
+  playButton.classList.add("playing");
+  playButton.setAttribute("aria-pressed", "true");
+  playTimer = setInterval(() => {
+    const nextYear = currentYear + 1;
+    if (nextYear > Number(yearSlider.max)) {
+      stopPlayback();
+      return;
+    }
+    setYear(nextYear);
+  }, 700);
+}
+
+function stopPlayback() {
+  if (playTimer) clearInterval(playTimer);
+  playTimer = null;
+  isPlaying = false;
+  if (!playButton) return;
+  playButton.textContent = "Play";
+  playButton.classList.remove("playing");
+  playButton.setAttribute("aria-pressed", "false");
 }
 
 function rebuildGraph() {
@@ -347,7 +385,7 @@ function drawCompassFrame() {
 }
 
 function drawTradeEdges() {
-  if (currentScene !== "mismatch") return;
+  if (currentScene !== "overview") return;
   const nodes = new Map(countryNodes.map((node) => [node.iso3, node]));
   const visibleEdges = (tradeEdgesByYear.get(Number(currentYear)) || [])
     .filter((edge) => nodes.has(edge.exporter_iso3) && nodes.has(edge.importer_iso3))
@@ -412,8 +450,8 @@ function drawCluster(node) {
   }
 
   for (const metric of visible) {
-    const active = currentScene === "mismatch" || SCENES[currentScene].metric === metric.key;
-    const alpha = currentScene === "mismatch" ? 72 : 184;
+    const active = activeMetricKeys.has(metric.key);
+    const alpha = currentScene === "overview" ? 72 : 184;
     const weight = active ? (hot ? 4 : 2.6) : 1.2;
     fill(metric.color[0], metric.color[1], metric.color[2], alpha);
     stroke(metric.color[0], metric.color[1], metric.color[2], hot ? 255 : 210);
@@ -451,7 +489,7 @@ function drawLegend() {
   const x = width < 700 ? 18 : 28;
   const y = width < 700 ? 20 : 24;
   const visibleKeys = visibleMetrics();
-  const showTrade = currentScene === "mismatch" && (tradeEdgesByYear.get(Number(currentYear)) || []).length > 0;
+  const showTrade = currentScene === "overview" && (tradeEdgesByYear.get(Number(currentYear)) || []).length > 0;
   noStroke();
   fill(23, 16, 9, 185);
   rect(x - 10, y - 12, width < 700 ? 210 : 270, showTrade ? 100 : 74, 12);
@@ -461,7 +499,7 @@ function drawLegend() {
   textStyle(BOLD);
   textSize(12);
   textAlign(LEFT, CENTER);
-  text(`${SCENES[currentScene].label.toUpperCase()} / ${currentYear}`, x, y);
+  text(`${metricLabel().toUpperCase()} / ${currentYear}`, x, y);
 
   let lx = x;
   for (const key of visibleKeys) {
@@ -490,8 +528,12 @@ function drawLegend() {
 }
 
 function visibleMetrics() {
-  const metric = SCENES[currentScene].metric;
-  return metric === "all" ? METRIC_ORDER : [metric];
+  return METRIC_ORDER.filter((key) => activeMetricKeys.has(key));
+}
+
+function metricLabel() {
+  if (currentScene === "overview") return "Overview";
+  return visibleMetrics().map((key) => METRICS[key].label).join(" + ");
 }
 
 function updateHover() {
@@ -539,7 +581,7 @@ function drawTooltip() {
   textStyle(NORMAL);
   textSize(11);
   fill(255, 248, 235, 160);
-  text(`${SCENES[currentScene].label} / ${currentYear}`, x + padding, y + padding + 25);
+  text(`${metricLabel()} / ${currentYear}`, x + padding, y + padding + 25);
 
   const startY = y + padding + 54;
   tooltipMetric("Has", row.global_reserve_share, METRICS.has.color, x + padding, startY, boxW - padding * 2);
@@ -603,13 +645,13 @@ function mousePressed() {
 
 function updateDetailPanel() {
   const node = hovered || selected;
-  const key = node ? `${currentYear}:${currentScene}:${node.iso3}` : `${currentYear}:${currentScene}:empty`;
+  const key = node ? `${currentYear}:${metricLabel()}:${node.iso3}` : `${currentYear}:${metricLabel()}:empty`;
   if (key === lastPanelKey) return;
   lastPanelKey = key;
 
   if (!node) {
     detailPanel.innerHTML = `
-      <p class="panel-eyebrow">${SCENES[currentScene].label} / ${currentYear}</p>
+      <p class="panel-eyebrow">${metricLabel()} / ${currentYear}</p>
       <h2>Hover a country</h2>
       <p class="panel-copy">Each country is one concentric cluster. Use the filters to isolate has, pumps, or burns.</p>
     `;

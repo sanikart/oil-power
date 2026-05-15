@@ -96,7 +96,7 @@ h1 {
   align-items: stretch;
   justify-content: stretch;
   min-width: 0;
-  width: min(420px, calc(100vw - 28px));
+  width: min(520px, calc(100vw - 28px));
   padding: 14px;
   border: 1px solid rgba(255, 248, 235, 0.24);
   border-radius: 18px;
@@ -110,6 +110,17 @@ h1 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   min-width: 0;
+}
+
+.filter-copy {
+  color: rgba(255, 248, 235, 0.74);
+  font-family: "Avenir Next Condensed", "Gill Sans", sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.filter-copy strong {
+  color: #fff8eb;
 }
 
 .scene-tab {
@@ -127,6 +138,30 @@ h1 {
   color: var(--crude);
   border-color: rgba(255, 248, 235, 0.72);
   background: rgba(255, 248, 235, 0.9);
+}
+
+.timeline-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.play-button {
+  min-height: 42px;
+  min-width: 74px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 248, 235, 0.34);
+  border-radius: 999px;
+  color: var(--crude);
+  background: rgba(255, 248, 235, 0.92);
+  cursor: pointer;
+}
+
+.play-button.playing {
+  color: #fff8eb;
+  border-color: rgba(217, 154, 40, 0.82);
+  background: rgba(217, 154, 40, 0.72);
 }
 
 .year-control {
@@ -218,9 +253,30 @@ input[type="range"] {
   display: none;
 }
 
+.credits {
+  position: fixed;
+  left: clamp(14px, 2vw, 28px);
+  bottom: clamp(14px, 2vw, 28px);
+  z-index: 18;
+  max-width: min(520px, calc(100vw - 560px));
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 248, 235, 0.18);
+  border-radius: 14px;
+  color: rgba(255, 248, 235, 0.66);
+  background: rgba(23, 16, 9, 0.56);
+  backdrop-filter: blur(14px);
+  font-family: "Avenir Next Condensed", "Gill Sans", sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
 @media (max-width: 900px) {
   .controls {
     width: min(390px, calc(100vw - 24px));
+  }
+
+  .credits {
+    display: none;
   }
 
   #sketch-holder {
@@ -239,7 +295,7 @@ input[type="range"] {
 
   .scene-tabs {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
   }
 
@@ -247,6 +303,10 @@ input[type="range"] {
     width: 100%;
     padding: 0 10px;
     font-size: 0.95rem;
+  }
+
+  .timeline-row {
+    grid-template-columns: 1fr;
   }
 
   #sketch-holder {

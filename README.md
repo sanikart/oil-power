@@ -48,7 +48,7 @@ This branch contains a third no-map p5.js story canvas. Each highlighted country
 - `Pumps`: annual oil production
 - `Burns`: annual oil consumption
 
-Countries are placed by rough directional world-region logic, not by geographic boundaries, projections, outlines, or a map view. The `Has`, `Pumps`, and `Burns` tabs act as filters; `Mismatch` shows all three concentric layers together and overlays crude trade lines. Trade lines use CEPII BACI HS17 product `270900`; the line runs from exporter to importer, so the arrow points toward the buyer.
+Countries are placed by rough directional world-region logic, not by geographic boundaries, projections, outlines, or a map view. `Overview` shows all three concentric layers together and overlays crude trade lines. `Has`, `Pumps`, and `Burns` are multi-select filter chips: `Has` means proved reserves, `Pumps` means production, and `Burns` means consumption. Trade lines use CEPII BACI HS17 product `270900`; the line runs from exporter to importer, so the arrow points toward the buyer. The timeline includes a play button for animating the year sequence.
 
 ```bash
 python3 -m http.server 8000 --directory app
