@@ -129,18 +129,48 @@ h1 {
   min-height: 32px;
   min-width: 0;
   padding: 0 9px;
-  border: 1px solid rgba(255, 248, 235, 0.22);
+  border: 1px solid var(--chip-border, rgba(255, 248, 235, 0.22));
   border-radius: 999px;
-  color: rgba(255, 248, 235, 0.78);
-  background: rgba(255, 248, 235, 0.08);
+  color: var(--chip-ink, rgba(255, 248, 235, 0.78));
+  background: var(--chip-bg, rgba(255, 248, 235, 0.08));
   cursor: pointer;
   font-size: 0.86rem;
 }
 
 .scene-tab.active {
-  color: var(--crude);
-  border-color: rgba(255, 248, 235, 0.72);
-  background: rgba(255, 248, 235, 0.9);
+  color: #fff8eb;
+  border-color: var(--chip-active-border, rgba(255, 248, 235, 0.72));
+  background: var(--chip-active-bg, rgba(255, 248, 235, 0.9));
+  box-shadow: 0 0 22px var(--chip-glow, rgba(255, 248, 235, 0.14));
+}
+
+.overview-chip {
+  --chip-active-bg: rgba(255, 248, 235, 0.28);
+  --chip-active-border: rgba(255, 248, 235, 0.72);
+}
+
+.has-chip {
+  --chip-border: rgba(205, 78, 51, 0.46);
+  --chip-bg: rgba(205, 78, 51, 0.16);
+  --chip-active-bg: rgba(205, 78, 51, 0.72);
+  --chip-active-border: rgba(232, 116, 83, 0.92);
+  --chip-glow: rgba(205, 78, 51, 0.32);
+}
+
+.pumps-chip {
+  --chip-border: rgba(223, 158, 47, 0.48);
+  --chip-bg: rgba(223, 158, 47, 0.16);
+  --chip-active-bg: rgba(223, 158, 47, 0.72);
+  --chip-active-border: rgba(239, 190, 86, 0.92);
+  --chip-glow: rgba(223, 158, 47, 0.32);
+}
+
+.burns-chip {
+  --chip-border: rgba(54, 145, 134, 0.52);
+  --chip-bg: rgba(54, 145, 134, 0.16);
+  --chip-active-bg: rgba(54, 145, 134, 0.76);
+  --chip-active-border: rgba(101, 190, 179, 0.92);
+  --chip-glow: rgba(54, 145, 134, 0.34);
 }
 
 .timeline-row {

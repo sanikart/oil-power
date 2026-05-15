@@ -214,7 +214,6 @@ function draw() {
   drawTradeEdges();
   drawCountryClusters();
   drawTitle();
-  drawLegend();
   drawTooltip();
   updateDetailPanel();
 }
@@ -464,48 +463,6 @@ function drawTitle() {
   textSize(titleSize);
   textLeading(titleSize * 0.9);
   text("Underground is not\nthe same as power.", x, y - 8);
-}
-
-function drawLegend() {
-  const x = width < 700 ? 18 : 28;
-  const y = width < 700 ? 20 : 24;
-  const visibleKeys = visibleMetrics();
-  const showTrade = currentScene === "overview" && (tradeEdgesByYear.get(Number(currentYear)) || []).length > 0;
-  noStroke();
-  fill(23, 16, 9, 185);
-  rect(x - 10, y - 12, width < 700 ? 210 : 270, showTrade ? 100 : 74, 12);
-
-  fill(246, 232, 199, 232);
-  textFont("Avenir Next Condensed, Gill Sans, sans-serif");
-  textStyle(BOLD);
-  textSize(12);
-  textAlign(LEFT, CENTER);
-  text(`${metricLabel().toUpperCase()} / ${currentYear}`, x, y);
-
-  let lx = x;
-  for (const key of visibleKeys) {
-    const metric = METRICS[key];
-    fill(metric.color[0], metric.color[1], metric.color[2], 210);
-    circle(lx + 6, y + 30, 11);
-    fill(246, 232, 199, 205);
-    textStyle(NORMAL);
-    textSize(11);
-    text(metric.label, lx + 18, y + 30);
-    lx += width < 700 ? 54 : 68;
-  }
-
-  if (showTrade) {
-    stroke(238, 168, 54, 170);
-    strokeWeight(2);
-    line(x, y + 64, x + 28, y + 64);
-    noStroke();
-    fill(54, 145, 134, 220);
-    triangle(x + 34, y + 64, x + 26, y + 60, x + 26, y + 68);
-    fill(246, 232, 199, 205);
-    textStyle(NORMAL);
-    textSize(11);
-    text("crude trade: exporter → importer", x + 46, y + 64);
-  }
 }
 
 function visibleMetrics() {
