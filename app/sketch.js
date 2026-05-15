@@ -424,8 +424,15 @@ function drawTradeEdge(exporter, importer, edge, localMax, relation, kind) {
   const dy = importer.y - exporter.y;
   const distance = Math.max(1, Math.hypot(dx, dy));
   const bend = Math.min(88, distance * 0.18) * (exporter.iso3 < importer.iso3 ? 1 : -1);
-  const midX = (exporter.x + importer.x) / 2 - (dy / distance) * bend;
-  const midY = (exporter.y + importer.y) / 2 + (dx / distance) * bend;
+  const normalX = -dy / distance;
+  const normalY = dx / distance;
+  const refinedOffset = refined ? Math.min(24, Math.max(10, distance * 0.035)) : 0;
+  const startX = exporter.x + normalX * refinedOffset;
+  const startY = exporter.y + normalY * refinedOffset;
+  const endX = importer.x + normalX * refinedOffset;
+  const endY = importer.y + normalY * refinedOffset;
+  const midX = (exporter.x + importer.x) / 2 + normalX * (bend + refinedOffset);
+  const midY = (exporter.y + importer.y) / 2 + normalY * (bend + refinedOffset);
 
   noFill();
   if (relation === "import" || refined) drawingContext.setLineDash(refined ? [3, 8] : [7, 7]);
@@ -435,14 +442,14 @@ function drawTradeEdge(exporter, importer, edge, localMax, relation, kind) {
   else if (relation === "export") stroke(238, 168, 54, alpha);
   else stroke(238, 168, 54, alpha);
   strokeWeight(weight);
-  bezier(exporter.x, exporter.y, midX, midY, midX, midY, importer.x, importer.y);
+  bezier(startX, startY, midX, midY, midX, midY, endX, endY);
   drawingContext.setLineDash([]);
 
   const t = 0.78;
-  const px = bezierPoint(exporter.x, midX, midX, importer.x, t);
-  const py = bezierPoint(exporter.y, midY, midY, importer.y, t);
-  const tx = bezierTangent(exporter.x, midX, midX, importer.x, t);
-  const ty = bezierTangent(exporter.y, midY, midY, importer.y, t);
+  const px = bezierPoint(startX, midX, midX, endX, t);
+  const py = bezierPoint(startY, midY, midY, endY, t);
+  const tx = bezierTangent(startX, midX, midX, endX, t);
+  const ty = bezierTangent(startY, midY, midY, endY, t);
   const angle = Math.atan2(ty, tx);
   push();
   translate(px, py);
