@@ -434,7 +434,7 @@ function drawCluster(node) {
   const hot = hovered === node || selected === node;
   const focusSet = focusedCountryIso3();
   const isDimmed = focusSet && !focusSet.has(node.iso3);
-  const nodeAlpha = isDimmed ? 0.4 : 1;
+  const nodeAlpha = isDimmed ? 0.2 : 1;
   const visibleKeys = visibleMetrics();
   const visible = visibleKeys.map((key) => node.metrics[key]).sort((a, b) => b.r - a.r);
   const haloR = Math.max(...visible.map((metric) => metric.r), 10) + (hot ? 17 : 9);
