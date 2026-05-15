@@ -474,15 +474,6 @@ function drawCluster(node) {
     .filter((metric) => metric.hasValue)
     .sort((a, b) => b.r - a.r);
   if (!visible.length) return;
-  const haloR = Math.max(...visible.map((metric) => metric.r), 10) + (hot ? 17 : 9);
-
-  if (hot) {
-    noFill();
-    stroke(255, 246, 221, 190);
-    strokeWeight(2.5);
-    circle(node.x, node.y, haloR * 2);
-  }
-
   for (const metric of visible) {
     const active = activeMetricKeys.has(metric.key);
     const alpha = currentScene === "overview" ? 72 : 184;
