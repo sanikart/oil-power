@@ -562,99 +562,105 @@ function drawTooltip() {
 
   const row = hovered.row;
   const proxy = refiningProxyFor(row.iso3);
-  const padding = 14;
-  const boxW = width < 700 ? 250 : 292;
+  const padding = width < 700 ? 14 : 16;
+  const boxW = width < 700 ? Math.min(300, width - 24) : 360;
   const crudeEdges = connectedEdgesFor(row.iso3, tradeEdgesByYear);
   const refinedEdges = connectedEdgesFor(row.iso3, refinedEdgesByYear);
-  const boxH = 178 + (proxy ? 42 : 0) + (crudeEdges.length ? 50 : 0) + (refinedEdges.length ? 50 : 0);
+  const boxH = 220 + (proxy ? 54 : 0) + (crudeEdges.length ? 62 : 0) + (refinedEdges.length ? 62 : 0);
   const position = stickyTooltipPosition(boxW, boxH);
   const x = position.x;
   const y = position.y;
 
   noStroke();
-  fill(11, 8, 5, 224);
-  rect(x, y, boxW, boxH, 16);
-  stroke(255, 248, 235, 48);
-  strokeWeight(1);
+  fill(9, 6, 4, 246);
+  rect(x, y, boxW, boxH, 18);
+  stroke(255, 248, 235, 70);
+  strokeWeight(1.2);
   noFill();
-  rect(x + 0.5, y + 0.5, boxW - 1, boxH - 1, 16);
+  rect(x + 0.5, y + 0.5, boxW - 1, boxH - 1, 18);
 
   noStroke();
   fill(255, 248, 235, 245);
   textFont("Avenir Next Condensed, Gill Sans, sans-serif");
   textStyle(BOLD);
   textAlign(LEFT, TOP);
-  textSize(18);
+  textSize(width < 700 ? 18 : 21);
   text(`${row.country_name} (${row.iso3})`, x + padding, y + padding);
 
   textStyle(NORMAL);
-  textSize(11);
-  fill(255, 248, 235, 160);
-  text(`${metricLabel()} / ${currentYear}`, x + padding, y + padding + 25);
+  textSize(12);
+  fill(255, 248, 235, 176);
+  text(`${metricLabel()} / ${currentYear}`, x + padding, y + padding + 28);
 
-  const startY = y + padding + 54;
+  const startY = y + padding + 62;
   tooltipMetric("Has", row.global_reserve_share, METRICS.has.color, x + padding, startY, boxW - padding * 2);
-  tooltipMetric("Pumps", row.global_production_share, METRICS.pumps.color, x + padding, startY + 30, boxW - padding * 2);
-  tooltipMetric("Burns", row.global_consumption_share, METRICS.burns.color, x + padding, startY + 60, boxW - padding * 2);
+  tooltipMetric("Pumps", row.global_production_share, METRICS.pumps.color, x + padding, startY + 34, boxW - padding * 2);
+  tooltipMetric("Burns", row.global_consumption_share, METRICS.burns.color, x + padding, startY + 68, boxW - padding * 2);
 
   fill(255, 248, 235, 180);
-  textSize(11);
+  textSize(12);
   textStyle(NORMAL);
   textAlign(LEFT, TOP);
-  text(storyFor(row), x + padding, startY + 95, boxW - padding * 2, 42);
+  text(storyFor(row), x + padding, startY + 106, boxW - padding * 2, 46);
 
-  let tradeY = startY + 139;
+  let tradeY = startY + 162;
   if (proxy) {
-    fill(255, 248, 235, 210);
-    textFont("Avenir Next Condensed, Gill Sans, sans-serif");
-    textStyle(BOLD);
-    textAlign(LEFT, TOP);
-    textSize(11);
-    text("Refining bridge proxy", x + padding, tradeY);
+    tooltipSectionHeader("Refining bridge proxy", x + padding, tradeY, [255, 248, 235]);
+    fill(255, 248, 235, 192);
     textStyle(NORMAL);
-    fill(255, 248, 235, 178);
+    textSize(12);
     text(
       `crude in ${money(proxy.crude_import_value_thousand_usd)} / refined out ${money(proxy.refined_export_value_thousand_usd)}`,
       x + padding,
-      tradeY + 17,
+      tradeY + 20,
       boxW - padding * 2,
-      18,
+      22,
     );
-    tradeY += 42;
+    tradeY += 54;
   }
 
   if (crudeEdges.length) {
-    fill(255, 248, 235, 210);
-    textFont("Avenir Next Condensed, Gill Sans, sans-serif");
-    textStyle(BOLD);
-    textAlign(LEFT, TOP);
-    textSize(11);
-    text("Top crude trade links", x + padding, tradeY);
-    textStyle(NORMAL);
-    fill(255, 248, 235, 178);
+    tooltipSectionHeader("Crude oil trade", x + padding, tradeY, [232, 116, 83]);
     crudeEdges.slice(0, 2).forEach((edge, index) => {
-      const isExporter = edge.exporter_iso3 === row.iso3;
-      const partner = isExporter ? edge.importer_iso3 : edge.exporter_iso3;
-      const direction = isExporter ? "exports to" : "imports from";
-      text(`${direction} ${partner}: ${money(edge.trade_value_thousand_usd)}`, x + padding, tradeY + 17 + index * 15);
+      tooltipTradeLine(edge, row.iso3, x + padding, tradeY + 22 + index * 18, boxW - padding * 2, [232, 116, 83]);
     });
-    tradeY += 50;
+    tradeY += 62;
   }
 
   if (refinedEdges.length) {
-    fill(167, 214, 255, 220);
-    textStyle(BOLD);
-    textSize(11);
-    text("Top refined-product links", x + padding, tradeY);
-    textStyle(NORMAL);
-    fill(205, 230, 255, 180);
+    tooltipSectionHeader("Refined product trade", x + padding, tradeY, [129, 199, 255]);
     refinedEdges.slice(0, 2).forEach((edge, index) => {
-      const isExporter = edge.exporter_iso3 === row.iso3;
-      const partner = isExporter ? edge.importer_iso3 : edge.exporter_iso3;
-      const direction = isExporter ? "exports to" : "imports from";
-      text(`${direction} ${partner}: ${money(edge.trade_value_thousand_usd)}`, x + padding, tradeY + 17 + index * 15);
+      tooltipTradeLine(edge, row.iso3, x + padding, tradeY + 22 + index * 18, boxW - padding * 2, [129, 199, 255]);
     });
   }
+}
+
+function tooltipSectionHeader(label, x, y, rgb) {
+  noStroke();
+  fill(rgb[0], rgb[1], rgb[2], 235);
+  circle(x + 4, y + 7, 7);
+  fill(255, 248, 235, 230);
+  textFont("Avenir Next Condensed, Gill Sans, sans-serif");
+  textStyle(BOLD);
+  textAlign(LEFT, TOP);
+  textSize(12);
+  text(label, x + 14, y);
+}
+
+function tooltipTradeLine(edge, iso3, x, y, w, rgb) {
+  const isExporter = edge.exporter_iso3 === iso3;
+  const partner = isExporter ? edge.importer_iso3 : edge.exporter_iso3;
+  const direction = isExporter ? "exports to" : "imports from";
+  fill(rgb[0], rgb[1], rgb[2], 220);
+  textStyle(BOLD);
+  textSize(12);
+  textAlign(LEFT, TOP);
+  text(direction, x, y);
+  fill(255, 248, 235, 218);
+  text(`${partner}`, x + 68, y);
+  textAlign(RIGHT, TOP);
+  fill(255, 248, 235, 190);
+  text(money(edge.trade_value_thousand_usd), x + w, y);
 }
 
 function stickyTooltipPosition(boxW, boxH) {
@@ -682,19 +688,20 @@ function tooltipMetric(label, value, rgb, x, y, w) {
   const share = safeNumber(value);
   const barW = share > 0 ? Math.max(2, w * constrain(share / 0.22, 0, 1)) : 0;
   noStroke();
-  fill(255, 248, 235, 190);
+  fill(255, 248, 235, 216);
   textFont("Avenir Next Condensed, Gill Sans, sans-serif");
   textStyle(BOLD);
-  textSize(11);
+  textSize(12);
   textAlign(LEFT, TOP);
   text(label, x, y);
   textAlign(RIGHT, TOP);
+  fill(255, 248, 235, 232);
   text(percent(value), x + w, y);
-  fill(255, 248, 235, 34);
-  rect(x, y + 16, w, 5, 999);
+  fill(255, 248, 235, 42);
+  rect(x, y + 18, w, 6, 999);
   if (barW > 0) {
-    fill(rgb[0], rgb[1], rgb[2], 230);
-    rect(x, y + 16, barW, 5, 999);
+    fill(rgb[0], rgb[1], rgb[2], 238);
+    rect(x, y + 18, barW, 6, 999);
   }
 }
 
