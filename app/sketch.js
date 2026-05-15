@@ -567,8 +567,9 @@ function drawTooltip() {
   const crudeEdges = connectedEdgesFor(row.iso3, tradeEdgesByYear);
   const refinedEdges = connectedEdgesFor(row.iso3, refinedEdgesByYear);
   const boxH = 178 + (proxy ? 42 : 0) + (crudeEdges.length ? 50 : 0) + (refinedEdges.length ? 50 : 0);
-  const x = constrain(mouseX + 18, 12, width - boxW - 12);
-  const y = constrain(mouseY - 22, 12, height - boxH - 12);
+  const position = stickyTooltipPosition(boxW, boxH);
+  const x = position.x;
+  const y = position.y;
 
   noStroke();
   fill(11, 8, 5, 224);
@@ -654,6 +655,15 @@ function drawTooltip() {
       text(`${direction} ${partner}: ${money(edge.trade_value_thousand_usd)}`, x + padding, tradeY + 17 + index * 15);
     });
   }
+}
+
+function stickyTooltipPosition(boxW, boxH) {
+  const margin = width < 700 ? 12 : 28;
+  const creditsReserve = width < 900 ? 18 : 66;
+  return {
+    x: margin,
+    y: Math.max(12, height - creditsReserve - boxH),
+  };
 }
 
 function connectedEdgesFor(iso3, edgeMap) {
