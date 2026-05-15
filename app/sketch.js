@@ -209,7 +209,6 @@ function windowResized() {
 
 function draw() {
   drawBackground();
-  drawCompassFrame();
   updateGraph();
   updateHover();
   drawTradeEdges();
@@ -274,7 +273,7 @@ function togglePlayback() {
       return;
     }
     setYear(nextYear);
-  }, 700);
+  }, 320);
 }
 
 function stopPlayback() {
@@ -362,26 +361,6 @@ function updateGraph() {
 
 function drawBackground() {
   background(23, 16, 9);
-  noFill();
-  stroke(255, 235, 194, 12);
-  strokeWeight(1);
-  const step = 42;
-  for (let x = -step; x < width + step; x += step) line(x, 0, x + width * 0.10, height);
-  for (let y = 0; y < height; y += step) line(0, y, width, y - height * 0.06);
-}
-
-function drawCompassFrame() {
-  const cx = width / 2;
-  const cy = height / 2;
-  stroke(246, 232, 199, 38);
-  strokeWeight(1);
-  const frameMargin = width < 700 ? 28 : 8;
-  line(cx, frameMargin, cx, height - frameMargin);
-  line(frameMargin, cy, width - frameMargin, cy);
-  noFill();
-  const frameBase = Math.min(width, height);
-  ellipse(cx, cy, frameBase * (width < 700 ? 0.66 : 0.88), frameBase * (width < 700 ? 0.66 : 0.88));
-  ellipse(cx, cy, frameBase * (width < 700 ? 1.02 : 1.28), frameBase * (width < 700 ? 1.02 : 1.28));
 }
 
 function drawTradeEdges() {
