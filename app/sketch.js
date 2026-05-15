@@ -450,7 +450,7 @@ function drawCluster(node) {
 
 function drawTitle() {
   const x = width < 700 ? 18 : 28;
-  const y = width < 700 ? 86 : 104;
+  const y = width < 700 ? 52 : 42;
   const titleSize = width < 700 ? 20 : 30;
   noStroke();
   fill(23, 16, 9, 150);
