@@ -376,15 +376,22 @@ function drawTradeEdges() {
   for (const edge of visibleEdges) {
     const exporter = nodes.get(edge.exporter_iso3);
     const importer = nodes.get(edge.importer_iso3);
-    const connected = hovered && (hovered.iso3 === edge.exporter_iso3 || hovered.iso3 === edge.importer_iso3);
-    drawTradeEdge(exporter, importer, edge, localMax, connected);
+    const relation = hovered
+      ? hovered.iso3 === edge.exporter_iso3
+        ? "export"
+        : hovered.iso3 === edge.importer_iso3
+          ? "import"
+          : "none"
+      : "none";
+    drawTradeEdge(exporter, importer, edge, localMax, relation);
   }
 }
 
-function drawTradeEdge(exporter, importer, edge, localMax, connected) {
+function drawTradeEdge(exporter, importer, edge, localMax, relation) {
   const valueN = localMax ? edge.trade_value_thousand_usd / localMax : edge.value_norm;
-  const alpha = connected ? 210 : map(Math.sqrt(valueN), 0, 1, 24, 118);
-  const weight = connected ? map(Math.sqrt(valueN), 0, 1, 1.6, 4.8) : map(Math.sqrt(valueN), 0, 1, 0.45, 2.4);
+  const connected = relation !== "none";
+  const alpha = connected ? 225 : map(Math.sqrt(valueN), 0, 1, 24, 102);
+  const weight = connected ? map(Math.sqrt(valueN), 0, 1, 1.8, 5.4) : map(Math.sqrt(valueN), 0, 1, 0.45, 2.1);
   const dx = importer.x - exporter.x;
   const dy = importer.y - exporter.y;
   const distance = Math.max(1, Math.hypot(dx, dy));
@@ -393,9 +400,14 @@ function drawTradeEdge(exporter, importer, edge, localMax, connected) {
   const midY = (exporter.y + importer.y) / 2 + (dx / distance) * bend;
 
   noFill();
-  stroke(238, 168, 54, alpha);
+  if (relation === "import") drawingContext.setLineDash([7, 7]);
+  else drawingContext.setLineDash([]);
+  if (relation === "import") stroke(54, 145, 134, alpha);
+  else if (relation === "export") stroke(238, 168, 54, alpha);
+  else stroke(238, 168, 54, alpha);
   strokeWeight(weight);
   bezier(exporter.x, exporter.y, midX, midY, midX, midY, importer.x, importer.y);
+  drawingContext.setLineDash([]);
 
   const t = 0.78;
   const px = bezierPoint(exporter.x, midX, midX, importer.x, t);
@@ -407,7 +419,9 @@ function drawTradeEdge(exporter, importer, edge, localMax, connected) {
   translate(px, py);
   rotate(angle);
   noStroke();
-  fill(54, 145, 134, connected ? 245 : alpha + 38);
+  if (relation === "import") fill(54, 145, 134, 245);
+  else if (relation === "export") fill(238, 168, 54, 245);
+  else fill(54, 145, 134, alpha + 38);
   triangle(0, 0, -7, -3.5, -7, 3.5);
   pop();
 }
