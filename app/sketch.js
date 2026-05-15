@@ -274,7 +274,7 @@ function togglePlayback() {
       return;
     }
     setYear(nextYear);
-  }, 320);
+  }, 107);
 }
 
 function stopPlayback() {
