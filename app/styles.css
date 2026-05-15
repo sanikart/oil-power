@@ -107,7 +107,7 @@ h1 {
 
 .scene-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 6px;
   min-width: 0;
 }
@@ -120,7 +120,8 @@ h1 {
   color: #fff8eb;
 }
 
-.scene-tab {
+.scene-tab,
+.layer-tab {
   min-height: 32px;
   min-width: 0;
   padding: 0 9px;
@@ -132,7 +133,8 @@ h1 {
   font-size: 0.86rem;
 }
 
-.scene-tab.active {
+.scene-tab.active,
+.layer-tab.active {
   color: #fff8eb;
   border-color: var(--chip-active-border, rgba(255, 248, 235, 0.72));
   background: var(--chip-active-bg, rgba(255, 248, 235, 0.9));
@@ -166,6 +168,15 @@ h1 {
   --chip-active-bg: rgba(54, 145, 134, 0.76);
   --chip-active-border: rgba(101, 190, 179, 0.92);
   --chip-glow: rgba(54, 145, 134, 0.34);
+}
+
+.refined-chip {
+  --chip-border: rgba(81, 154, 219, 0.52);
+  --chip-bg: rgba(81, 154, 219, 0.14);
+  --chip-active-bg: rgba(81, 154, 219, 0.74);
+  --chip-active-border: rgba(129, 199, 255, 0.94);
+  --chip-glow: rgba(81, 154, 219, 0.32);
+  color: rgba(217, 238, 255, 0.82);
 }
 
 .timeline-row {
@@ -326,11 +337,12 @@ input[type="range"] {
 
   .scene-tabs {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     width: auto;
   }
 
-  .scene-tab {
+  .scene-tab,
+  .layer-tab {
     padding: 0 10px;
     font-size: 0.84rem;
   }

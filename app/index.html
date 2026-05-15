@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Oil Power: Underground Is Not Power</title>
-    <link rel="stylesheet" href="./styles.css?v=controls-top-3" />
+    <link rel="stylesheet" href="./styles.css?v=refined-layer-1" />
     <style>
       .controls {
         top: clamp(14px, 2vw, 28px) !important;
@@ -54,6 +54,7 @@
           <button class="scene-tab has-chip" type="button" data-filter="has" aria-pressed="false" title="Has = proved oil reserves.">Has</button>
           <button class="scene-tab pumps-chip" type="button" data-filter="pumps" aria-pressed="false" title="Pumps = oil production.">Pumps</button>
           <button class="scene-tab burns-chip" type="button" data-filter="burns" aria-pressed="false" title="Burns = oil consumption.">Burns</button>
+          <button class="layer-tab refined-chip" id="refined-toggle" type="button" aria-pressed="false" title="Refined = refined petroleum product exports, a proxy for refining and re-export power.">Refined</button>
         </div>
         <div class="timeline-row">
           <button class="play-button" id="play-button" type="button" aria-label="Play timeline" aria-pressed="false">▶</button>
@@ -74,13 +75,13 @@
       </section>
 
       <section class="caption" id="scene-caption">
-        Overview shows all three oil-power layers plus crude trade flows. Has = proved reserves, Pumps = production, Burns = consumption.
+        Overview shows oil-power layers plus crude trade flows. Refined adds refined-product exports as a refining and re-export proxy.
       </section>
 
       <section class="credits" aria-label="Credits">
-        Data: Our World in Data oil reserves, production, consumption; CEPII BACI HS17 crude petroleum trade HS 270900. Built with p5.js. Visualization: Sanika + Codex.
+        Data: Our World in Data oil reserves, production, consumption; CEPII BACI HS17 crude HS 270900 and refined petroleum HS 271000 trade. Built with p5.js. Visualization: Sanika + Codex.
       </section>
     </main>
-    <script src="./sketch.js?v=controls-top-3"></script>
+    <script src="./sketch.js?v=refined-layer-1"></script>
   </body>
 </html>
