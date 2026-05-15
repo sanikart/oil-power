@@ -435,12 +435,10 @@ function drawTradeEdge(exporter, importer, edge, localMax, relation, kind) {
   const midY = (exporter.y + importer.y) / 2 + normalY * (bend + refinedOffset);
 
   noFill();
-  if (relation === "import" || refined) drawingContext.setLineDash(refined ? [3, 8] : [7, 7]);
+  if (relation === "import") drawingContext.setLineDash([7, 7]);
   else drawingContext.setLineDash([]);
   if (refined) stroke(81, 154, 219, alpha);
-  else if (relation === "import") stroke(54, 145, 134, alpha);
-  else if (relation === "export") stroke(238, 168, 54, alpha);
-  else stroke(238, 168, 54, alpha);
+  else stroke(205, 78, 51, alpha);
   strokeWeight(weight);
   bezier(startX, startY, midX, midY, midX, midY, endX, endY);
   drawingContext.setLineDash([]);
@@ -456,9 +454,7 @@ function drawTradeEdge(exporter, importer, edge, localMax, relation, kind) {
   rotate(angle);
   noStroke();
   if (refined) fill(129, 199, 255, connected ? 245 : alpha + 52);
-  else if (relation === "import") fill(54, 145, 134, 245);
-  else if (relation === "export") fill(238, 168, 54, 245);
-  else fill(54, 145, 134, alpha + 38);
+  else fill(232, 116, 83, connected ? 245 : alpha + 38);
   triangle(0, 0, -7, -3.5, -7, 3.5);
   pop();
 }
