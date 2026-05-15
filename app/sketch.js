@@ -334,13 +334,15 @@ function metricValues(row) {
     const metric = METRICS[key];
     const share = safeNumber(row[metric.share]);
     const value = row[metric.field];
-    const r = value > 0 ? map(Math.sqrt(share), 0, Math.sqrt(0.22), minR, maxR, true) : minR * 0.8;
+    const hasValue = value > 0 && share > 0;
+    const r = hasValue ? map(Math.sqrt(share), 0, Math.sqrt(0.22), minR, maxR, true) : 0;
     values[key] = {
       ...metric,
       key,
       share,
       value,
       rank: row[metric.rank],
+      hasValue,
       r,
     };
   }
@@ -436,7 +438,11 @@ function drawCluster(node) {
   const isDimmed = focusSet && !focusSet.has(node.iso3);
   const nodeAlpha = isDimmed ? 0.2 : 1;
   const visibleKeys = visibleMetrics();
-  const visible = visibleKeys.map((key) => node.metrics[key]).sort((a, b) => b.r - a.r);
+  const visible = visibleKeys
+    .map((key) => node.metrics[key])
+    .filter((metric) => metric.hasValue)
+    .sort((a, b) => b.r - a.r);
+  if (!visible.length) return;
   const haloR = Math.max(...visible.map((metric) => metric.r), 10) + (hot ? 17 : 9);
 
   if (hot) {
@@ -506,7 +512,9 @@ function updateHover() {
   let best = null;
   let bestDistance = Infinity;
   for (const node of countryNodes) {
-    const hitRadius = Math.max(...visibleMetrics().map((key) => node.metrics[key].r), 10) + 16;
+    const visibleRadii = visibleMetrics().map((key) => node.metrics[key].r).filter((radius) => radius > 0);
+    if (!visibleRadii.length) continue;
+    const hitRadius = Math.max(...visibleRadii, 10) + 16;
     const d = dist(mouseX, mouseY, node.x, node.y);
     if (d < hitRadius && d < bestDistance) {
       best = node;
@@ -585,7 +593,7 @@ function connectedTradeEdges(iso3) {
 
 function tooltipMetric(label, value, rgb, x, y, w) {
   const share = safeNumber(value);
-  const barW = Math.max(2, w * constrain(share / 0.22, 0, 1));
+  const barW = share > 0 ? Math.max(2, w * constrain(share / 0.22, 0, 1)) : 0;
   noStroke();
   fill(255, 248, 235, 190);
   textFont("Avenir Next Condensed, Gill Sans, sans-serif");
@@ -597,8 +605,10 @@ function tooltipMetric(label, value, rgb, x, y, w) {
   text(percent(value), x + w, y);
   fill(255, 248, 235, 34);
   rect(x, y + 16, w, 5, 999);
-  fill(rgb[0], rgb[1], rgb[2], 230);
-  rect(x, y + 16, barW, 5, 999);
+  if (barW > 0) {
+    fill(rgb[0], rgb[1], rgb[2], 230);
+    rect(x, y + 16, barW, 5, 999);
+  }
 }
 
 function mousePressed() {
