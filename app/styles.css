@@ -291,15 +291,14 @@ input[type="range"] {
   left: clamp(14px, 2vw, 28px);
   bottom: clamp(14px, 2vw, 28px);
   z-index: 18;
-  max-width: min(520px, calc(100vw - 560px));
-  padding: 12px 14px;
-  border: 1px solid rgba(255, 248, 235, 0.18);
-  border-radius: 14px;
-  color: rgba(255, 248, 235, 0.66);
-  background: rgba(23, 16, 9, 0.56);
-  backdrop-filter: blur(14px);
+  max-width: min(680px, calc(100vw - 560px));
+  padding: 0;
+  border: 0;
+  color: rgba(255, 248, 235, 0.58);
+  background: transparent;
+  backdrop-filter: none;
   font-family: "Avenir Next Condensed", "Gill Sans", sans-serif;
-  font-size: 0.78rem;
+  font-size: 12px;
   line-height: 1.35;
 }
 
