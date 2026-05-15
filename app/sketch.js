@@ -145,7 +145,6 @@ let refiningProxyByYearIso = new Map();
 let currentYear = 2020;
 let currentScene = "overview";
 let activeMetricKeys = new Set(METRIC_ORDER);
-let showRefinedLayer = false;
 let isPlaying = false;
 let playTimer = null;
 let countryNodes = [];
@@ -154,7 +153,6 @@ let selected = null;
 let yearSlider;
 let yearLabel;
 let playButton;
-let refinedToggle;
 let detailPanel;
 let captionEl;
 let lastPanelKey = "";
@@ -176,7 +174,6 @@ function setup() {
   yearSlider = document.getElementById("year-slider");
   yearLabel = document.getElementById("year-label");
   playButton = document.getElementById("play-button");
-  refinedToggle = document.getElementById("refined-toggle");
   detailPanel = document.getElementById("detail-panel");
   captionEl = document.getElementById("scene-caption");
 
@@ -210,7 +207,6 @@ function setup() {
   document.querySelectorAll(".scene-tab").forEach((button) => {
     button.addEventListener("click", () => setFilter(button.dataset.filter));
   });
-  refinedToggle.addEventListener("click", toggleRefinedLayer);
   yearSlider.addEventListener("input", () => {
     stopPlayback();
     setYear(Number(yearSlider.value));
@@ -263,13 +259,6 @@ function setFilter(filter) {
   selected = null;
   lastPanelKey = "";
   rebuildGraph();
-}
-
-function toggleRefinedLayer() {
-  showRefinedLayer = !showRefinedLayer;
-  refinedToggle.classList.toggle("active", showRefinedLayer);
-  refinedToggle.setAttribute("aria-pressed", String(showRefinedLayer));
-  lastPanelKey = "";
 }
 
 function setYear(year) {
@@ -399,7 +388,7 @@ function drawTradeEdges() {
 }
 
 function drawRefinedEdges() {
-  if (currentScene !== "overview" || !showRefinedLayer) return;
+  if (currentScene !== "overview") return;
   drawEdgeSet(refinedEdgesByYear, "refined");
 }
 
@@ -513,7 +502,7 @@ function drawCluster(node) {
 function focusedCountryIso3() {
   if (!hovered) return null;
   const focused = new Set([hovered.iso3]);
-  for (const edgeMap of showRefinedLayer ? [tradeEdgesByYear, refinedEdgesByYear] : [tradeEdgesByYear]) {
+  for (const edgeMap of [tradeEdgesByYear, refinedEdgesByYear]) {
     for (const edge of edgeMap.get(Number(currentYear)) || []) {
       if (edge.exporter_iso3 === hovered.iso3) focused.add(edge.importer_iso3);
       if (edge.importer_iso3 === hovered.iso3) focused.add(edge.exporter_iso3);
@@ -569,11 +558,11 @@ function drawTooltip() {
   if (!hovered) return;
 
   const row = hovered.row;
-  const proxy = showRefinedLayer ? refiningProxyFor(row.iso3) : null;
+  const proxy = refiningProxyFor(row.iso3);
   const padding = 14;
   const boxW = width < 700 ? 250 : 292;
   const crudeEdges = connectedEdgesFor(row.iso3, tradeEdgesByYear);
-  const refinedEdges = showRefinedLayer ? connectedEdgesFor(row.iso3, refinedEdgesByYear) : [];
+  const refinedEdges = connectedEdgesFor(row.iso3, refinedEdgesByYear);
   const boxH = 178 + (proxy ? 42 : 0) + (crudeEdges.length ? 50 : 0) + (refinedEdges.length ? 50 : 0);
   const x = constrain(mouseX + 18, 12, width - boxW - 12);
   const y = constrain(mouseY - 22, 12, height - boxH - 12);
