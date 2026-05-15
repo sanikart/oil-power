@@ -280,8 +280,8 @@ function rebuildGraph() {
 }
 
 function targetFor(layout) {
-  const marginX = Math.max(74, width * 0.06);
-  const marginY = Math.max(78, height * 0.11);
+  const marginX = width < 700 ? Math.max(66, width * 0.055) : Math.max(34, width * 0.025);
+  const marginY = width < 700 ? Math.max(74, height * 0.105) : Math.max(52, height * 0.072);
   return {
     x: map(layout.x, 0, 1, marginX, width - marginX),
     y: map(layout.y, 0, 1, marginY, height - marginY),
@@ -290,8 +290,8 @@ function targetFor(layout) {
 
 function metricValues(row) {
   const values = {};
-  const maxR = width < 700 ? 26 : 42;
-  const minR = width < 700 ? 4 : 5;
+  const maxR = width < 700 ? 28 : 60;
+  const minR = width < 700 ? 4.5 : 7;
   for (const key of METRIC_ORDER) {
     const metric = METRICS[key];
     const share = safeNumber(row[metric.share]);
@@ -337,11 +337,13 @@ function drawCompassFrame() {
   const cy = height / 2;
   stroke(246, 232, 199, 38);
   strokeWeight(1);
-  line(cx, 36, cx, height - 36);
-  line(36, cy, width - 36, cy);
+  const frameMargin = width < 700 ? 36 : 22;
+  line(cx, frameMargin, cx, height - frameMargin);
+  line(frameMargin, cy, width - frameMargin, cy);
   noFill();
-  ellipse(cx, cy, Math.min(width, height) * 0.60, Math.min(width, height) * 0.60);
-  ellipse(cx, cy, Math.min(width, height) * 0.92, Math.min(width, height) * 0.92);
+  const frameBase = Math.min(width, height);
+  ellipse(cx, cy, frameBase * (width < 700 ? 0.60 : 0.74), frameBase * (width < 700 ? 0.60 : 0.74));
+  ellipse(cx, cy, frameBase * (width < 700 ? 0.92 : 1.08), frameBase * (width < 700 ? 0.92 : 1.08));
 }
 
 function drawTradeEdges() {
