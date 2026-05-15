@@ -280,8 +280,8 @@ function rebuildGraph() {
 }
 
 function targetFor(layout) {
-  const marginX = width < 700 ? Math.max(66, width * 0.055) : Math.max(34, width * 0.025);
-  const marginY = width < 700 ? Math.max(74, height * 0.105) : Math.max(52, height * 0.072);
+  const marginX = width < 700 ? Math.max(54, width * 0.04) : Math.max(8, width * 0.006);
+  const marginY = width < 700 ? Math.max(58, height * 0.075) : Math.max(12, height * 0.016);
   return {
     x: map(layout.x, 0, 1, marginX, width - marginX),
     y: map(layout.y, 0, 1, marginY, height - marginY),
@@ -290,8 +290,8 @@ function targetFor(layout) {
 
 function metricValues(row) {
   const values = {};
-  const maxR = width < 700 ? 28 : 60;
-  const minR = width < 700 ? 4.5 : 7;
+  const maxR = width < 700 ? 30 : 68;
+  const minR = width < 700 ? 5 : 8;
   for (const key of METRIC_ORDER) {
     const metric = METRICS[key];
     const share = safeNumber(row[metric.share]);
@@ -337,13 +337,13 @@ function drawCompassFrame() {
   const cy = height / 2;
   stroke(246, 232, 199, 38);
   strokeWeight(1);
-  const frameMargin = width < 700 ? 36 : 22;
+  const frameMargin = width < 700 ? 28 : 8;
   line(cx, frameMargin, cx, height - frameMargin);
   line(frameMargin, cy, width - frameMargin, cy);
   noFill();
   const frameBase = Math.min(width, height);
-  ellipse(cx, cy, frameBase * (width < 700 ? 0.60 : 0.74), frameBase * (width < 700 ? 0.60 : 0.74));
-  ellipse(cx, cy, frameBase * (width < 700 ? 0.92 : 1.08), frameBase * (width < 700 ? 0.92 : 1.08));
+  ellipse(cx, cy, frameBase * (width < 700 ? 0.66 : 0.88), frameBase * (width < 700 ? 0.66 : 0.88));
+  ellipse(cx, cy, frameBase * (width < 700 ? 1.02 : 1.28), frameBase * (width < 700 ? 1.02 : 1.28));
 }
 
 function drawTradeEdges() {
@@ -431,9 +431,9 @@ function drawCluster(node) {
 }
 
 function drawTitle() {
-  const x = 24;
-  const y = height < 620 ? 78 : 96;
-  const titleSize = width < 700 ? 22 : 34;
+  const x = width < 700 ? 18 : 28;
+  const y = width < 700 ? 86 : 104;
+  const titleSize = width < 700 ? 20 : 30;
   noStroke();
   fill(23, 16, 9, 150);
   rect(x - 12, y - 16, width < 700 ? 292 : 458, titleSize * 2.15, 18);
@@ -448,8 +448,8 @@ function drawTitle() {
 }
 
 function drawLegend() {
-  const x = 24;
-  const y = 24;
+  const x = width < 700 ? 18 : 28;
+  const y = width < 700 ? 20 : 24;
   const visibleKeys = visibleMetrics();
   const showTrade = currentScene === "mismatch" && (tradeEdgesByYear.get(Number(currentYear)) || []).length > 0;
   noStroke();
