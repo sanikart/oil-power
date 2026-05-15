@@ -432,6 +432,9 @@ function drawCountryClusters() {
 
 function drawCluster(node) {
   const hot = hovered === node || selected === node;
+  const focusSet = focusedCountryIso3();
+  const isDimmed = focusSet && !focusSet.has(node.iso3);
+  const nodeAlpha = isDimmed ? 0.4 : 1;
   const visibleKeys = visibleMetrics();
   const visible = visibleKeys.map((key) => node.metrics[key]).sort((a, b) => b.r - a.r);
   const haloR = Math.max(...visible.map((metric) => metric.r), 10) + (hot ? 17 : 9);
@@ -447,19 +450,29 @@ function drawCluster(node) {
     const active = activeMetricKeys.has(metric.key);
     const alpha = currentScene === "overview" ? 72 : 184;
     const weight = active ? (hot ? 4 : 2.6) : 1.2;
-    fill(metric.color[0], metric.color[1], metric.color[2], alpha);
-    stroke(metric.color[0], metric.color[1], metric.color[2], hot ? 255 : 210);
+    fill(metric.color[0], metric.color[1], metric.color[2], alpha * nodeAlpha);
+    stroke(metric.color[0], metric.color[1], metric.color[2], (hot ? 255 : 210) * nodeAlpha);
     strokeWeight(weight);
     circle(node.x, node.y, metric.r * 2);
   }
 
   noStroke();
-  fill(255, 247, 226, hot ? 255 : 224);
+  fill(255, 247, 226, (hot ? 255 : 224) * nodeAlpha);
   textFont("Avenir Next Condensed, Gill Sans, sans-serif");
   textStyle(BOLD);
   textSize(width < 700 ? 9 : 11);
   textAlign(CENTER, CENTER);
   text(node.iso3, node.x, node.y);
+}
+
+function focusedCountryIso3() {
+  if (!hovered) return null;
+  const focused = new Set([hovered.iso3]);
+  for (const edge of tradeEdgesByYear.get(Number(currentYear)) || []) {
+    if (edge.exporter_iso3 === hovered.iso3) focused.add(edge.importer_iso3);
+    if (edge.importer_iso3 === hovered.iso3) focused.add(edge.exporter_iso3);
+  }
+  return focused;
 }
 
 function drawTitle() {
