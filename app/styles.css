@@ -98,12 +98,11 @@ h1 {
   min-width: 0;
   width: auto;
   max-width: calc(100vw - 28px);
-  padding: 10px;
-  border: 1px solid rgba(255, 248, 235, 0.24);
-  border-radius: 18px;
-  background: rgba(23, 16, 9, 0.72);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(18px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .scene-tabs {
@@ -114,11 +113,7 @@ h1 {
 }
 
 .filter-copy {
-  max-width: 235px;
-  color: rgba(255, 248, 235, 0.74);
-  font-family: "Avenir Next Condensed", "Gill Sans", sans-serif;
-  font-size: 0.82rem;
-  line-height: 1.35;
+  display: none;
 }
 
 .filter-copy strong {

@@ -4,7 +4,33 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Oil Power: Underground Is Not Power</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=controls-top-3" />
+    <style>
+      .controls {
+        top: clamp(14px, 2vw, 28px) !important;
+        right: clamp(14px, 2vw, 28px) !important;
+        bottom: auto !important;
+        left: auto !important;
+        width: auto !important;
+        max-width: calc(100vw - 28px) !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+      }
+
+      .filter-copy {
+        display: none !important;
+      }
+
+      .credits {
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        font-size: 12px !important;
+      }
+    </style>
     <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
   </head>
   <body>
@@ -24,10 +50,10 @@
           <strong>Overview</strong> shows all oil-power layers and crude trade flows. <strong>Has</strong> = proved reserves, <strong>Pumps</strong> = production, <strong>Burns</strong> = consumption.
         </div>
         <div class="scene-tabs" aria-label="Metric filters">
-          <button class="scene-tab overview-chip active" type="button" data-filter="overview" aria-pressed="true">Overview</button>
-          <button class="scene-tab has-chip" type="button" data-filter="has" aria-pressed="false">Has</button>
-          <button class="scene-tab pumps-chip" type="button" data-filter="pumps" aria-pressed="false">Pumps</button>
-          <button class="scene-tab burns-chip" type="button" data-filter="burns" aria-pressed="false">Burns</button>
+          <button class="scene-tab overview-chip active" type="button" data-filter="overview" aria-pressed="true" title="Overview shows all oil-power layers and crude trade flows.">Overview</button>
+          <button class="scene-tab has-chip" type="button" data-filter="has" aria-pressed="false" title="Has = proved oil reserves.">Has</button>
+          <button class="scene-tab pumps-chip" type="button" data-filter="pumps" aria-pressed="false" title="Pumps = oil production.">Pumps</button>
+          <button class="scene-tab burns-chip" type="button" data-filter="burns" aria-pressed="false" title="Burns = oil consumption.">Burns</button>
         </div>
         <div class="timeline-row">
           <button class="play-button" id="play-button" type="button" aria-label="Play timeline" aria-pressed="false">▶</button>
@@ -55,6 +81,6 @@
         Data: Our World in Data oil reserves, production, consumption; CEPII BACI HS17 crude petroleum trade HS 270900. Built with p5.js. Visualization: Sanika + Codex.
       </section>
     </main>
-    <script src="./sketch.js?v=triad-controls-1"></script>
+    <script src="./sketch.js?v=controls-top-3"></script>
   </body>
 </html>
