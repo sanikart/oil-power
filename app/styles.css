@@ -89,15 +89,16 @@ h1 {
 .controls {
   position: fixed;
   right: clamp(14px, 2vw, 28px);
-  bottom: clamp(14px, 2vw, 28px);
+  top: clamp(14px, 2vw, 28px);
   z-index: 20;
-  display: grid;
-  gap: 16px;
-  align-items: stretch;
-  justify-content: stretch;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
   min-width: 0;
-  width: min(520px, calc(100vw - 28px));
-  padding: 14px;
+  width: auto;
+  max-width: calc(100vw - 28px);
+  padding: 10px;
   border: 1px solid rgba(255, 248, 235, 0.24);
   border-radius: 18px;
   background: rgba(23, 16, 9, 0.72);
@@ -108,11 +109,12 @@ h1 {
 .scene-tabs {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
 .filter-copy {
+  max-width: 235px;
   color: rgba(255, 248, 235, 0.74);
   font-family: "Avenir Next Condensed", "Gill Sans", sans-serif;
   font-size: 0.82rem;
@@ -124,14 +126,15 @@ h1 {
 }
 
 .scene-tab {
-  min-height: 40px;
+  min-height: 32px;
   min-width: 0;
-  padding: 0 10px;
+  padding: 0 9px;
   border: 1px solid rgba(255, 248, 235, 0.22);
   border-radius: 999px;
   color: rgba(255, 248, 235, 0.78);
   background: rgba(255, 248, 235, 0.08);
   cursor: pointer;
+  font-size: 0.86rem;
 }
 
 .scene-tab.active {
@@ -142,15 +145,15 @@ h1 {
 
 .timeline-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 12px;
-  align-items: end;
+  grid-template-columns: auto minmax(150px, 210px);
+  gap: 8px;
+  align-items: center;
 }
 
 .play-button {
-  min-height: 42px;
-  min-width: 74px;
-  padding: 0 16px;
+  min-height: 32px;
+  min-width: 36px;
+  padding: 0 10px;
   border: 1px solid rgba(255, 248, 235, 0.34);
   border-radius: 999px;
   color: var(--crude);
@@ -166,7 +169,7 @@ h1 {
 
 .year-control {
   display: grid;
-  gap: 6px;
+  gap: 3px;
   min-width: 0;
   width: 100%;
   color: rgba(255, 248, 235, 0.72);
@@ -177,7 +180,7 @@ h1 {
 
 .year-control strong {
   color: #fff8eb;
-  font-size: 1.15rem;
+  font-size: 1rem;
 }
 
 input[type="range"] {
@@ -272,7 +275,11 @@ input[type="range"] {
 
 @media (max-width: 900px) {
   .controls {
-    width: min(390px, calc(100vw - 24px));
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    flex-wrap: wrap;
   }
 
   .credits {
@@ -295,18 +302,18 @@ input[type="range"] {
 
   .scene-tabs {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: auto;
   }
 
   .scene-tab {
-    width: 100%;
     padding: 0 10px;
-    font-size: 0.95rem;
+    font-size: 0.84rem;
   }
 
   .timeline-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: auto minmax(150px, 1fr);
+    flex: 1 1 260px;
   }
 
   #sketch-holder {

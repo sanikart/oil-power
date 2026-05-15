@@ -263,7 +263,8 @@ function togglePlayback() {
   const maxYear = Number(yearSlider.max);
   if (currentYear >= maxYear) setYear(Number(yearSlider.min));
   isPlaying = true;
-  playButton.textContent = "Pause";
+  playButton.textContent = "❚❚";
+  playButton.setAttribute("aria-label", "Pause timeline");
   playButton.classList.add("playing");
   playButton.setAttribute("aria-pressed", "true");
   playTimer = setInterval(() => {
@@ -281,7 +282,8 @@ function stopPlayback() {
   playTimer = null;
   isPlaying = false;
   if (!playButton) return;
-  playButton.textContent = "Play";
+  playButton.textContent = "▶";
+  playButton.setAttribute("aria-label", "Play timeline");
   playButton.classList.remove("playing");
   playButton.setAttribute("aria-pressed", "false");
 }
